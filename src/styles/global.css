@@ -841,7 +841,8 @@ textarea {
 
 .bottomBar {
   display: none;
-  grid-template-columns: repeat(4, 1fr);
+  /* три действия: объекты, вид, экспорт */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid var(--color-line);
   background: var(--color-paper);
 }
@@ -1099,10 +1100,10 @@ textarea {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 54px;
+    bottom: calc(54px + env(safe-area-inset-bottom, 0px));
     top: auto;
     width: auto;
-    height: min(66dvh, 560px);
+    height: min(78dvh, 660px);
     z-index: 30;
     background: var(--color-paper);
     border-top: 1px solid var(--color-line);
@@ -1137,14 +1138,12 @@ textarea {
   .rail-right {
     overflow-y: auto;
     overflow-x: hidden;
-    /* панель действий липнет к низу — оставляем место, чтобы не резала слои */
-    padding-bottom: 64px;
+    padding-bottom: 0;
   }
 
+  /* панель действий идёт в общем потоке: липкая перекрывала слои */
   .rail-right .actions {
-    position: sticky;
-    bottom: 0;
-    background: var(--color-paper);
+    position: static;
     margin-top: 0;
   }
 
