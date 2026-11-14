@@ -1,6 +1,6 @@
 # illustrations
 
-**Демо:** https://illustrations-hk9odkspq-echoisonline1.vercel.app
+**Демо:** https://illustrations-pink.vercel.app
 
 Сервис, который собирает иллюстрации из фиксированной библиотеки SVG: тема или список объектов на входе, готовый кадр на выходе — векторный SVG или PNG, в одном из трёх форматов и в одной из палитр заказчика.
 
