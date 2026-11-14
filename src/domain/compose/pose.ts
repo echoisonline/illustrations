@@ -54,10 +54,35 @@ function parse(raw: string): Pose | null {
 }
 
 /**
+ * Поза зависит только от темы и кадра, поэтому ответ запоминаем: один и тот же
+ * бриф не должен стоить денег дважды. Ключ — тема в нижнем регистре и формат.
+ */
+const cache = new Map<string, Pose | null>();
+const inFlight = new Map<string, Promise<Pose | null>>();
+
+const cacheKey = (theme: string, format: FormatId) => `${theme.trim().toLowerCase()}|${format}`;
+
+/**
  * Выбор позы моделью. Она выбирает только из закрытого списка паттернов —
  * координат не касается. Любая ошибка означает «остаёмся на правилах».
  */
 export async function askPose(theme: string, format: FormatId): Promise<Pose | null> {
+  const key = cacheKey(theme, format);
+  if (cache.has(key)) return cache.get(key) ?? null;
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+
+  const request = requestPose(theme, format).then((pose) => {
+    // отказ модели тоже запоминаем ненадолго: иначе каждый повтор ждёт таймаут
+    if (pose) cache.set(key, pose);
+    inFlight.delete(key);
+    return pose;
+  });
+  inFlight.set(key, request);
+  return request;
+}
+
+async function requestPose(theme: string, format: FormatId): Promise<Pose | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT);
   try {
