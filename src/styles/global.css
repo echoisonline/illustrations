@@ -454,6 +454,10 @@ textarea {
 .sheet {
   display: block;
   border: 1px solid color-mix(in srgb, var(--color-ink) 12%, transparent);
+  /* на Android жест с холста не должен уходить в скролл или «потянуть-обновить»:
+     иначе браузер отменяет указатель и перетаскивание обрывается */
+  touch-action: none;
+  user-select: none;
 }
 
 .sheetCaption {
@@ -1550,4 +1554,14 @@ textarea {
     transform: translateY(16px);
     opacity: 0.6;
   }
+}
+/* страница не участвует в жестах обновления: приложение занимает весь экран */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+.stageArea {
+  overscroll-behavior: contain;
+  touch-action: none;
 }
