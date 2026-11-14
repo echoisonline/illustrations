@@ -1,0 +1,1409 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f1eee4;
+  --color-paper-2: #f6f3e9;
+  --color-paper-3: #fbf9f1;
+  --color-ink: #14120e;
+  --color-muted: #7f7969;
+  --color-line: #d9d3c0;
+  --color-line-soft: #e6e1d0;
+  --font-display: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Golos Text", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --rail-w: 232px;
+  --insp-w: 248px;
+  --pad: 16px;
+  --top-h: 54px;
+  --r: 3px;
+  --r-lg: 5px;
+  --accent: #7864d7;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* вектор рисуем максимально гладко: по умолчанию Chromium в некоторых
+   масштабах округляет кривые до пиксельной сетки */
+svg {
+  shape-rendering: geometricPrecision;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--color-paper-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- типографика ---------- */
+
+.t-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- каркас ---------- */
+
+.shell {
+  position: relative;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: var(--top-h) minmax(0, 1fr);
+}
+
+/* вертикальные линии сетки — отдельным слоем, чтобы не было стыков на 1px */
+.shell::before,
+.shell::after {
+  content: "";
+  position: absolute;
+  top: var(--top-h);
+  bottom: 0;
+  width: 1px;
+  background: var(--color-line-soft);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.shell::before {
+  left: var(--rail-w);
+}
+
+.shell::after {
+  right: var(--insp-w);
+}
+
+.top {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--insp-w);
+  align-items: center;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-paper);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 var(--pad);
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- ввод темы ---------- */
+
+.brief {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--pad);
+}
+
+.briefField {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-3);
+  transition: border-color 0.15s;
+}
+
+.briefField:focus-within {
+  border-color: color-mix(in srgb, var(--color-ink) 45%, var(--color-line));
+}
+
+.briefField input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.briefField input::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+/* переключатель сценария: иконка + подпись режима */
+
+.modeSwitch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-2);
+}
+
+.modeSwitch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--color-muted);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.modeSwitch button:hover {
+  color: var(--color-ink);
+}
+
+.modeSwitch button[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+.exportRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  height: 100%;
+  padding: 0 var(--pad);
+}
+
+/* ---------- основная сетка ---------- */
+
+.main {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--insp-w);
+  min-height: 0;
+}
+
+.rail {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-ink) 16%, transparent) transparent;
+}
+
+.rail::-webkit-scrollbar {
+  width: 9px;
+}
+
+.rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rail::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.rail::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-ink) 26%, transparent);
+  background-clip: padding-box;
+}
+
+.rail-left {
+  padding: 12px 10px 16px var(--pad);
+}
+
+.rail-right {
+  display: flex;
+  flex-direction: column;
+}
+
+/* шапка шторки — только на узких экранах */
+.sheetHead {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 40px;
+  padding: 0 var(--pad);
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+/* ---------- библиотека ---------- */
+
+.objects {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.object {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 6px 2px 2px;
+  border-radius: var(--r);
+  text-align: left;
+  cursor: grab;
+  transition: background-color 0.15s;
+}
+
+.object:hover {
+  background: var(--color-paper-2);
+}
+
+.object:active {
+  cursor: grabbing;
+}
+
+.objectArt {
+  flex: 0 0 62px;
+  width: 62px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.objectArt svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.objectName {
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.2;
+  text-align: left;
+  color: var(--color-muted);
+  transition: color 0.15s;
+}
+
+.object:hover .objectName {
+  color: var(--color-ink);
+}
+
+.objectGrip {
+  opacity: 0;
+  color: var(--color-muted);
+  transition: opacity 0.15s;
+}
+
+.object:hover .objectGrip {
+  opacity: 0.55;
+}
+
+/* ---------- сцена ---------- */
+
+.stageCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.stageBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 44px;
+  padding: 7px var(--pad);
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+/* общий вид переключателей */
+
+.seg {
+  display: inline-flex;
+  min-width: 0;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-2);
+}
+
+.seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--color-muted);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.seg button:hover {
+  color: var(--color-ink);
+}
+
+.seg button[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+.glyph {
+  display: block;
+  opacity: 0.8;
+}
+
+.stageArea {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+  transition: background-color 0.15s;
+}
+
+.stageArea[data-drop="true"] {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.mat {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sheet {
+  display: block;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 12%, transparent);
+}
+
+.sheetCaption {
+  position: absolute;
+  top: -17px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-muted);
+}
+
+.item {
+  cursor: grab;
+  touch-action: none;
+}
+
+.item[data-selected="true"] {
+  cursor: grabbing;
+}
+
+.hit {
+  fill: transparent;
+}
+
+.emptyScene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 2;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 420px;
+}
+
+.chipBtn {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 6px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.chipBtn:hover {
+  border-color: color-mix(in srgb, var(--color-ink) 40%, var(--color-line));
+  background: #fff;
+}
+
+/* ---------- инспектор ---------- */
+
+.section {
+  padding: 14px var(--pad) 16px;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--color-muted);
+}
+
+/* пресеты палитр */
+
+.paletteRow {
+  display: flex;
+  width: 100%;
+  height: 24px;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  transition: border-color 0.15s;
+}
+
+.paletteRow:hover {
+  border-color: var(--color-line);
+}
+
+.paletteRow[data-on="true"] {
+  border-color: color-mix(in srgb, var(--color-ink) 60%, var(--color-line));
+}
+
+.chip {
+  height: 100%;
+  flex: 1;
+  border-radius: 1px;
+  outline: 1px solid color-mix(in srgb, var(--color-ink) 7%, transparent);
+  outline-offset: -1px;
+}
+
+.paletteLine {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.paletteRemove {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-paper);
+  color: var(--color-muted);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.paletteLine:hover .paletteRemove,
+.paletteRemove:focus-visible {
+  opacity: 1;
+}
+
+.paletteRemove:hover {
+  color: var(--color-ink);
+}
+
+/* плитка «своя палитра» — та же форма, что пресет, но с плюсом */
+
+.paletteAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 24px;
+  margin-top: 4px;
+  border: 1px dashed var(--color-line);
+  border-radius: var(--r);
+  color: var(--color-muted);
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.paletteAdd:hover {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 40%, var(--color-line));
+  background: var(--color-paper-2);
+}
+
+.sizeRow {
+  display: flex;
+  gap: 16px;
+}
+
+.sizeRow button {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--color-muted);
+  padding: 0 2px 1px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sizeRow button:hover {
+  color: var(--color-ink);
+}
+
+.sizeRow button[data-on="true"] {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-ink);
+}
+
+/* фон */
+
+.choiceRow {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-2);
+}
+
+.choiceRow button {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--color-muted);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.choiceRow button:hover {
+  color: var(--color-ink);
+}
+
+.choiceRow button[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+/* слои */
+
+.layers {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 var(--pad);
+  border-left: 2px solid transparent;
+  color: var(--color-muted);
+  text-align: left;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.layer:hover {
+  color: var(--color-ink);
+  background: var(--color-paper-2);
+}
+
+.layer[data-on="true"] {
+  border-left-color: var(--accent);
+  color: var(--color-ink);
+  background: var(--color-paper-2);
+}
+
+.layer .name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+}
+
+.layer .mark {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.layer .mark[data-kind="bg"] {
+  opacity: 0.2;
+}
+
+.empty {
+  padding: 8px var(--pad);
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+/* замена */
+
+.replace {
+  padding: 12px var(--pad) 14px;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.replaceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.replaceItem {
+  font-size: 11px;
+  padding: 4px 8px;
+  color: var(--color-muted);
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.replaceItem:hover {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 40%, var(--color-line));
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: auto;
+  padding: 8px var(--pad);
+  border-top: 1px solid var(--color-line-soft);
+}
+
+/* ---------- кнопки ---------- */
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  color: var(--color-muted);
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.iconBtn:hover {
+  color: var(--color-ink);
+  border-color: var(--color-line);
+  background: var(--color-paper-3);
+}
+
+.iconBtn:disabled {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.iconBtn[data-on="true"] {
+  color: var(--color-ink);
+  border-color: var(--color-line);
+  background: var(--color-paper-3);
+}
+
+/* кнопка с подписью: подпись всегда видна, иконка не болтается одна */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-3);
+  color: var(--color-muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.btn:hover {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 40%, var(--color-line));
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--r);
+  background: var(--color-ink);
+  color: var(--color-paper-3);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  transition: background-color 0.15s;
+}
+
+.btnPrimary:hover {
+  background: #2b2721;
+}
+
+/* ---------- нижняя панель (узкие экраны) ---------- */
+
+.bottomBar {
+  display: none;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-paper);
+}
+
+.bottomItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 54px;
+  color: var(--color-muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.bottomItem:hover,
+.bottomItem[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-2);
+}
+
+.scrim {
+  display: none;
+}
+
+/* ---------- модалка палитры ---------- */
+
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, #14120e 38%, transparent);
+  z-index: 40;
+}
+
+.dialogPanel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: min(860px, calc(100vw - 32px));
+  max-height: min(92dvh, 760px);
+  overflow: hidden;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--r-lg);
+  padding: 18px 20px 16px;
+  z-index: 41;
+}
+
+.dialogHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.dialogGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 26px;
+  padding-right: 4px;
+}
+
+.dialogFooter {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.dialogFooter .dialogMeta {
+  margin-left: 6px;
+}
+
+.dialogFooter .btnPrimary {
+  margin-left: auto;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+}
+
+.slotRow {
+  display: grid;
+  grid-template-columns: 92px 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.slotRow:last-child {
+  border-bottom: 0;
+}
+
+.slotLabel {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.slotSwatch {
+  width: 30px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 2px;
+  background: none;
+  cursor: pointer;
+}
+
+.slotSwatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.slotSwatch::-webkit-color-swatch {
+  border: 0;
+  border-radius: 1px;
+}
+
+.slotHex {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: lowercase;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.slotHex:focus {
+  border-bottom-color: var(--color-ink);
+}
+
+.slotRow .nameInput {
+  grid-column: 2 / -1;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.dialogSide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dialogPreview {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 200px;
+  display: block;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+}
+
+.dialogMeta {
+  color: var(--color-muted);
+}
+
+.jsonBox {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.5;
+  background: var(--color-paper-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  padding: 6px;
+  resize: vertical;
+}
+
+.uploadError {
+  margin: 0;
+  font-size: 10px;
+  color: #a4442f;
+}
+
+/* ---------- адаптив ---------- */
+
+@media (max-width: 1180px) {
+  :root {
+    --rail-w: 208px;
+    --insp-w: 232px;
+  }
+
+  .seg button {
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+}
+
+@media (max-width: 1080px) {
+  :root {
+    --rail-w: 0px;
+    --insp-w: 0px;
+  }
+
+  .shell {
+    grid-template-rows: var(--top-h) minmax(0, 1fr) auto;
+  }
+
+  .shell::before,
+  .shell::after {
+    display: none;
+  }
+
+  .top {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .exportRow {
+    display: none;
+  }
+
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bottomBar {
+    display: grid;
+    position: relative;
+    z-index: 29;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 28;
+    background: color-mix(in srgb, #14120e 30%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .scrim[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .rail-left,
+  .rail-right {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 54px;
+    top: auto;
+    width: auto;
+    height: min(66dvh, 560px);
+    z-index: 30;
+    background: var(--color-paper);
+    border-top: 1px solid var(--color-line);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    transform: translateY(calc(100% + 56px));
+    transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding: 0 0 12px;
+  }
+
+  .rail-left[data-open="true"],
+  .rail-right[data-open="true"] {
+    transform: none;
+  }
+
+  .rail-left {
+    padding: 0 0 12px;
+  }
+
+  .sheetHead {
+    display: flex;
+    position: sticky;
+    top: 0;
+    background: var(--color-paper);
+    z-index: 1;
+  }
+
+  .rail-left .objects {
+    padding: 6px var(--pad) 0;
+    gap: 2px;
+  }
+
+  .rail-right {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .rail-right .actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-paper);
+    margin-top: 0;
+  }
+
+  .stageBar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --top-h: 54px;
+    --pad: 12px;
+  }
+
+  .shell {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 7px 0 8px;
+    row-gap: 7px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .brand {
+    order: 1;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  /* форма распадается на два ряда: переключатель к бренду, поле — во всю ширину */
+  .brief {
+    display: contents;
+  }
+
+  .modeSwitch {
+    order: 2;
+    margin-left: auto;
+    margin-right: 12px;
+  }
+
+  .modeSwitch button {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+
+  .briefField {
+    order: 3;
+    flex: 1 0 calc(100% - 24px);
+    height: 34px;
+    margin: 0 12px;
+  }
+
+  .briefField input {
+    font-size: 13.5px;
+  }
+
+  .stageBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px var(--pad);
+  }
+
+  .stageBar .seg {
+    display: flex;
+    width: 100%;
+  }
+
+  .stageBar .seg button {
+    flex: 1;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+
+  .stageArea {
+    padding: 12px;
+  }
+
+  .mat {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dialogPanel {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    padding: 16px 14px 18px;
+  }
+
+  .dialogGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .dialogPreview {
+    flex: 0 0 auto;
+    aspect-ratio: 1;
+    min-height: 0;
+  }
+
+  .slotRow {
+    grid-template-columns: 74px 32px minmax(0, 1fr);
+  }
+}
+
+/* индикатор: модель подбирает композицию */
+.thinking {
+  width: 6px;
+  height: 6px;
+  margin-left: 10px;
+  border-radius: 50%;
+  background: var(--color-ink, #181817);
+  animation: thinking 1.1s ease-in-out infinite;
+}
+
+@keyframes thinking {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+/* холст занят: идёт подбор композиции */
+.mat[data-busy="true"] .sheet {
+  opacity: 0.35;
+  filter: grayscale(0.5);
+  pointer-events: none;
+}
+
+.busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: all;
+  color: var(--color-ink);
+}
+
+/* три полосы: та же анимация, что в дизайн-системе, но без оборота */
+.spinnerBar {
+  animation: spinnerBars 0.8s linear infinite;
+  animation-delay: -0.8s;
+}
+
+.spinnerBar2 {
+  animation-delay: -0.65s;
+}
+
+.spinnerBar3 {
+  animation-delay: -0.5s;
+}
+
+@keyframes spinnerBars {
+  0% {
+    y: 1px;
+    height: 22px;
+  }
+  93.75% {
+    y: 5px;
+    height: 14px;
+    opacity: 0.2;
+  }
+}
+/* ручки поворота в углах выделения */
+.rotHandle {
+  fill: var(--color-paper, #fff);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  cursor: grab;
+}
+
+.rotHandle:hover {
+  fill: var(--accent);
+}
+
+.item[data-selected="true"] {
+  cursor: move;
+}
+
+/* контекстный тулбар по правой кнопке */
+.ctxMenu {
+  position: fixed;
+  z-index: 40;
+  min-width: 178px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+  border-radius: 10px;
+  background: var(--color-paper, #fff);
+  display: grid;
+  gap: 1px;
+}
+
+.ctxMenu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ctxMenu button:hover {
+  background: color-mix(in srgb, var(--color-ink) 7%, transparent);
+}
+
+.ctxMenu span {
+  white-space: nowrap;
+}
+/* переключатель формата в шапке: та же группа, что и экспорт */
+.formatRow {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+}
+
+.formatRow button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.formatRow button svg rect {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.formatRow button:hover {
+  color: var(--color-ink);
+}
+
+.formatRow button[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+}
+
+.formatRow button[data-on="true"] svg rect {
+  fill: currentColor;
+  fill-opacity: 0.12;
+}

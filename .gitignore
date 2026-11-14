@@ -1,0 +1,16 @@
+node_modules
+dist
+*.local
+.env*
+.DS_Store
+Thumbs.db
+refs
+docs/scenes
+.shot-*.png
+.probe.js
+*.tsbuildinfo
+docs/bench
+docs/bench-*.png
+docs/preview-*.png
+docs/palette-*.png
+docs/fonts.png
