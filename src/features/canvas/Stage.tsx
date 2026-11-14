@@ -144,14 +144,21 @@ export function Stage() {
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
   };
 
-  const onPointerMove = (event: ReactPointerEvent) => {
+  /**
+   * Обновление сцены на кадр, а не на каждое событие указателя: мышь шлёт до
+   * 120–250 событий в секунду, и React успевал перерисовывать сцену чаще, чем
+   * экран. Перерисовка теперь одна на кадр.
+   */
+  const pending = useRef<{ x: number; y: number; shift: boolean } | null>(null);
+  const raf = useRef<number | null>(null);
+
+  const applyDrag = () => {
+    raf.current = null;
     const state = drag.current;
-    if (!state) return;
-    // палец поехал — это перетаскивание, а не долгое нажатие
-    cancelLongPress();
-    const point = toScene(event);
-    if (!point) return;
-    const item = items.find((i) => i.uid === state.uid);
+    const point = pending.current;
+    pending.current = null;
+    if (!state || !point) return;
+    const item = useStore.getState().items.find((i) => i.uid === state.uid);
     if (!item) return;
     if (state.mode === "move") {
       move(state.uid, state.x + (point.x - state.startX) / frame.w, state.y + (point.y - state.startY) / frame.h);
@@ -160,11 +167,27 @@ export function Stage() {
     const angle = Math.atan2(point.y - item.y * frame.h, point.x - item.x * frame.w);
     const degrees = ((angle - state.angle) * 180) / Math.PI;
     // поворот свободный, шифт выравнивает по пятнадцати градусам
-    const step = event.shiftKey ? 15 : 1;
+    const step = point.shift ? 15 : 1;
     rotate(state.uid, Math.round((state.rot + degrees) / step) * step);
   };
 
+  const onPointerMove = (event: ReactPointerEvent) => {
+    const state = drag.current;
+    if (!state) return;
+    // палец поехал — это перетаскивание, а не долгое нажатие
+    cancelLongPress();
+    const point = toScene(event);
+    if (!point) return;
+    pending.current = { x: point.x, y: point.y, shift: event.shiftKey };
+    if (raf.current === null) raf.current = requestAnimationFrame(applyDrag);
+  };
+
   const endDrag = () => {
+    if (raf.current !== null) {
+      cancelAnimationFrame(raf.current);
+      raf.current = null;
+      applyDrag();
+    }
     drag.current = null;
     cancelLongPress();
   };

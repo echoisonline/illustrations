@@ -34,16 +34,22 @@ export const palettes = manifest.palettes;
 export const formats = manifest.formats;
 export const objectById = new Map(objects.map((o) => [o.id, o]));
 
-const rawModules = import.meta.glob("../../../assets/source/**/*.svg", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
+/**
+ * Разметка SVG живёт вне бандла: `public/sprites.json` собирает
+ * `tools/build-sprites.mjs`. Приложение грузит его один раз до первого рендера,
+ * поэтому дальше вся работа синхронная, а JavaScript остаётся лёгким.
+ */
 const raw = new Map<string, string>();
-for (const [path, text] of Object.entries(rawModules)) {
-  const key = path.split("/source/")[1];
-  if (key) raw.set(key, text.replace(/\r\n/g, "\n"));
+
+export function loadSprites(payload: Record<string, string>): void {
+  raw.clear();
+  for (const [file, text] of Object.entries(payload)) {
+    raw.set(file, text.replace(/\r\n/g, "\n"));
+  }
+}
+
+export function spritesLoaded(): boolean {
+  return raw.size > 0;
 }
 
 export function spriteText(file: string): string {

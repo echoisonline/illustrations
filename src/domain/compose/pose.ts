@@ -62,11 +62,41 @@ const inFlight = new Map<string, Promise<Pose | null>>();
 
 const cacheKey = (theme: string, format: FormatId) => `${theme.trim().toLowerCase()}|${format}`;
 
+/** Ответы переживают перезагрузку: повторная генерация не стоит денег. */
+const STORAGE_KEY = "illustrations:poses";
+const STORAGE_LIMIT = 100;
+let restored = false;
+
+function restore() {
+  if (restored) return;
+  restored = true;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw) as Record<string, Pose>;
+    for (const [key, pose] of Object.entries(saved)) {
+      if (pose && typeof pose.pattern === "string") cache.set(key, pose);
+    }
+  } catch {
+    /* приватный режим или битые данные — просто начинаем с пустого кэша */
+  }
+}
+
+function persist() {
+  try {
+    const entries = [...cache.entries()].filter(([, pose]) => pose).slice(-STORAGE_LIMIT);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    /* некуда сохранять — кэш остаётся в памяти */
+  }
+}
+
 /**
  * Выбор позы моделью. Она выбирает только из закрытого списка паттернов —
  * координат не касается. Любая ошибка означает «остаёмся на правилах».
  */
 export async function askPose(theme: string, format: FormatId): Promise<Pose | null> {
+  restore();
   const key = cacheKey(theme, format);
   if (cache.has(key)) return cache.get(key) ?? null;
   const pending = inFlight.get(key);
@@ -74,7 +104,10 @@ export async function askPose(theme: string, format: FormatId): Promise<Pose | n
 
   const request = requestPose(theme, format).then((pose) => {
     // отказ модели тоже запоминаем ненадолго: иначе каждый повтор ждёт таймаут
-    if (pose) cache.set(key, pose);
+    if (pose) {
+      cache.set(key, pose);
+      persist();
+    }
     inFlight.delete(key);
     return pose;
   });

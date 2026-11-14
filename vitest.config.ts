@@ -6,6 +6,8 @@ export default defineConfig({
     // из манифеста, а не из getBBox
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // спрайты в тестах читаются с диска
+    setupFiles: ["src/test-setup.ts"],
     reporters: ["default"],
   },
 });

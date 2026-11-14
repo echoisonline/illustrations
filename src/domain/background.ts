@@ -17,6 +17,13 @@ export type BackgroundLayer = {
  * Подложка под кадр: сначала файл, нарисованный под этот формат
  * (fon/plate-wide.svg), иначе общая подложка из макета.
  */
+/** Подложка не зависит от того, что происходит со сценой: кэшируем результат. */
+const backgroundCache = new Map<string, BackgroundLayer[]>();
+const BACKGROUND_CACHE_LIMIT = 24;
+
+const paletteKey = (palette: Palette) =>
+  [palette.bg.join(""), palette.ink, palette.obj.join(""), palette.white].join("|");
+
 export function backgroundFor(
   variant: BackgroundVariant,
   format: Format,
@@ -24,6 +31,10 @@ export function backgroundFor(
   palette: Palette,
 ): BackgroundLayer[] {
   if (variant === "flat") return [];
+
+  const key = `${variant}|${format.id}|${format.w}x${format.h}|${size}|${paletteKey(palette)}`;
+  const cached = backgroundCache.get(key);
+  if (cached) return cached;
 
   const artwork =
     formatPlate(variant, format.id, size, palette) ??
@@ -34,7 +45,7 @@ export function backgroundFor(
   // как и в крупном размере — рисунок ложится по кромкам без обрезки
   const scale = Math.max(format.w / artwork.w, format.h / artwork.h);
 
-  return [
+  const layers: BackgroundLayer[] = [
     {
       kind: "plate",
       markup: artwork.markup,
@@ -44,4 +55,8 @@ export function backgroundFor(
       opacity: 1,
     },
   ];
+
+  if (backgroundCache.size >= BACKGROUND_CACHE_LIMIT) backgroundCache.clear();
+  backgroundCache.set(key, layers);
+  return layers;
 }

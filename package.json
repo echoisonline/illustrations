@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "build:library": "node tools/build-library.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "predev": "node tools/build-sprites.mjs",
+    "prebuild": "node tools/build-sprites.mjs",
+    "build:sprites": "node tools/build-sprites.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",
