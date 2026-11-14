@@ -16,3 +16,4 @@ docs/preview-*.png
 docs/palette-*.png
 docs/fonts.png
 public/sprites
+.vercel
