@@ -23,6 +23,8 @@ export function Inspector({ open, onClose }: { open: boolean; onClose: () => voi
   const toggleKind = useStore((s) => s.toggleKind);
   const replace = useStore((s) => s.replace);
   const removePalette = useStore((s) => s.removePalette);
+  const format = useStore((s) => s.format);
+  const setFormat = useStore((s) => s.setFormat);
 
   const current = items.find((i) => i.uid === selected);
   const palette = palettes[scheme] ?? palettes.a;
@@ -37,6 +39,34 @@ export function Inspector({ open, onClose }: { open: boolean; onClose: () => voi
         </button>
       </div>
 
+
+      {/* на узких экранах шапка прячет переключатель — он живёт здесь */}
+      <div className="section formatSection">
+        <div className="sectionHead">
+          <span className="t-label">формат</span>
+        </div>
+        <div className="seg formatSeg" role="group" aria-label="формат">
+          {([
+            ["square", "квадрат", 13, 13],
+            ["wide", "широкий", 17, 9],
+            ["tall", "вертикальный", 9, 17],
+          ] as const).map(([id, label, w, h]) => (
+            <button key={id} data-on={format === id} onClick={() => setFormat(id)} aria-label={label} title={label}>
+              <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden>
+                <rect
+                  className="formatGlyph"
+                  x={(22 - w) / 2}
+                  y={(22 - h) / 2}
+                  width={w}
+                  height={h}
+                  rx={2}
+                />
+              </svg>
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="section">
         <div className="sectionHead">

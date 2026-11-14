@@ -1137,6 +1137,8 @@ textarea {
   .rail-right {
     overflow-y: auto;
     overflow-x: hidden;
+    /* панель действий липнет к низу — оставляем место, чтобы не резала слои */
+    padding-bottom: 64px;
   }
 
   .rail-right .actions {
@@ -1406,4 +1408,89 @@ textarea {
 .formatRow button[data-on="true"] svg rect {
   fill: currentColor;
   fill-opacity: 0.12;
+}
+/* ---------- экспорт в модалке ---------- */
+
+.exportPanel {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.exportList {
+  display: grid;
+  gap: 6px;
+  padding: 4px var(--pad) 10px;
+}
+
+.exportItem {
+  display: grid;
+  grid-template-columns: 20px auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.exportItem:hover:not(:disabled) {
+  background: var(--color-paper-3);
+}
+
+.exportItem:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.exportLabel {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.exportHint {
+  color: var(--color-muted);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.exportPanel .dialogMeta {
+  padding: 0 var(--pad) 4px;
+}
+
+/* формат в правой панели: на широком экране он уже есть в шапке */
+.formatSection {
+  display: none;
+}
+
+.formatSeg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin-top: 8px;
+}
+
+.formatSeg button {
+  justify-content: center;
+  padding: 0 4px;
+  font-size: 11.5px;
+}
+
+.formatGlyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.formatSeg button[data-on="true"] .formatGlyph {
+  fill: currentColor;
+  fill-opacity: 0.14;
+}
+
+@media (max-width: 1080px) {
+  .formatSection {
+    display: block;
+  }
 }

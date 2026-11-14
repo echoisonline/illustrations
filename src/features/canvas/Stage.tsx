@@ -37,6 +37,15 @@ export function Stage() {
   const palettes = useStore((s) => s.palettes);
   const selected = useStore((s) => s.selected);
   const [menu, setMenu] = useState<{ x: number; y: number; uid: string } | null>(null);
+  /** долгое нажатие открывает меню на тач-экранах: правой кнопки там нет */
+  const longPress = useRef<number | null>(null);
+
+  const cancelLongPress = () => {
+    if (longPress.current !== null) {
+      window.clearTimeout(longPress.current);
+      longPress.current = null;
+    }
+  };
   const bg = useStore((s) => s.bg);
   const select = useStore((s) => s.select);
   const move = useStore((s) => s.move);
@@ -109,6 +118,15 @@ export function Stage() {
     event.stopPropagation();
     select(uid);
     setMenu(null);
+    cancelLongPress();
+    if (event.pointerType !== "mouse") {
+      const { clientX, clientY } = event;
+      longPress.current = window.setTimeout(() => {
+        longPress.current = null;
+        drag.current = null;
+        setMenu({ x: clientX, y: clientY, uid });
+      }, 450);
+    }
     const item = items.find((i) => i.uid === uid);
     if (!item) return;
     const point = toScene(event);
@@ -129,6 +147,8 @@ export function Stage() {
   const onPointerMove = (event: ReactPointerEvent) => {
     const state = drag.current;
     if (!state) return;
+    // палец поехал — это перетаскивание, а не долгое нажатие
+    cancelLongPress();
     const point = toScene(event);
     if (!point) return;
     const item = items.find((i) => i.uid === state.uid);
@@ -146,6 +166,7 @@ export function Stage() {
 
   const endDrag = () => {
     drag.current = null;
+    cancelLongPress();
   };
 
   useEffect(() => {

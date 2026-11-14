@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { ArrowRight, Download, Image as ImageIcon, Shapes, Shuffle, Wand2 } from "lucide-react";
-import { formatById, frameFor } from "../../domain/scene";
-import { exportPng, exportSvg } from "../export";
+import { ArrowRight, Shapes, Shuffle, Wand2 } from "lucide-react";
+import { ExportDialog } from "../export/ExportDialog";
 import { useStore } from "../../state/store";
 
 export function Header() {
@@ -9,11 +7,8 @@ export function Header() {
   const setBrief = useStore((s) => s.setBrief);
   const run = useStore((s) => s.run);
   const format = useStore((s) => s.format);
-  const scheme = useStore((s) => s.scheme);
-  const size = useStore((s) => s.size);
   const inputMode = useStore((s) => s.inputMode);
   const setInputMode = useStore((s) => s.setInputMode);
-  const [busy, setBusy] = useState(false);
   const thinking = useStore((s) => s.thinking);
   const items = useStore((s) => s.items);
   const lastBrief = useStore((s) => s.lastBrief);
@@ -27,17 +22,7 @@ export function Header() {
     items.length > 0 && brief.trim() === lastBrief && lastMode === inputMode && variants > 1;
   const setFormat = useStore((s) => s.setFormat);
 
-  const current = frameFor(formatById(format), size);
-  const tag = `${scheme}${size}`;
 
-  const onImage = async () => {
-    setBusy(true);
-    try {
-      await exportPng(current, tag);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <header className="top">
@@ -108,14 +93,7 @@ export function Header() {
         ))}
       </div>
 
-        <button className="btn" onClick={() => exportSvg(current, tag)} title="скачать svg">
-          <Download size={14} />
-          svg
-        </button>
-        <button className="btn" onClick={onImage} disabled={busy} title="скачать png">
-          <ImageIcon size={14} />
-          png
-        </button>
+        <ExportDialog />
       </div>
     </header>
   );
