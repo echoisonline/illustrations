@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>шрифты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400&family=Golos+Text:wght@400;500&family=Martian+Mono:wght@400&family=Yeseva+One&family=Onest:wght@300;400;500&family=Prata&family=Oranienbaum&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f1eee4;
+        --ink: #14120e;
+        --muted: #8a8474;
+        --line: #d5cfbc;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 28px 32px 40px;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .head {
+        font: 400 10px/1 "Golos Text", sans-serif;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 18px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 24px;
+        padding: 22px 0;
+        border-top: 1px solid var(--line);
+      }
+      .tag {
+        font: 400 10px/1.4 "Martian Mono", monospace;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
+      .tag b { display: block; color: var(--ink); font-weight: 400; margin-bottom: 6px; font-size: 11px; }
+      .sample { display: flex; flex-direction: column; gap: 14px; }
+      .brandline { display: flex; align-items: baseline; gap: 22px; }
+      .brand { font-size: 17px; letter-spacing: -0.03em; }
+      .brief { font-size: 19px; letter-spacing: -0.01em; }
+      .labels {
+        display: flex;
+        gap: 26px;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .body { font-size: 13px; color: var(--ink); max-width: 620px; }
+      .num { font-family: "Martian Mono", monospace; font-size: 10px; color: var(--muted); }
+
+      .a .brand, .a .brief, .a .labels { font-family: "Unbounded", sans-serif; font-weight: 300; }
+      .a .labels { font-family: "Golos Text", sans-serif; font-weight: 500; letter-spacing: 0.16em; }
+      .a .body { font-family: "Golos Text", sans-serif; }
+
+      .b .brand, .b .brief { font-family: "Yeseva One", serif; }
+      .b .brand { letter-spacing: -0.01em; }
+      .b .labels, .b .body { font-family: "Onest", sans-serif; font-weight: 400; }
+      .b .labels { font-weight: 500; }
+
+      .c .brand, .c .brief { font-family: "Prata", serif; }
+      .c .brand { letter-spacing: -0.02em; }
+      .c .labels, .c .body { font-family: "Golos Text", sans-serif; }
+
+      .d .brand, .d .brief { font-family: "Oranienbaum", serif; }
+      .d .labels, .d .body { font-family: "Onest", sans-serif; }
+
+      .e .brand, .e .brief { font-family: "Onest", sans-serif; font-weight: 300; }
+      .e .brand { letter-spacing: 0.02em; text-transform: lowercase; }
+      .e .labels, .e .body { font-family: "Golos Text", sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div class="head">сравнение шрифтовых пар · один и тот же экран</div>
+
+    <div class="row a">
+      <div class="tag"><b>A · текущий</b>Unbounded 300<br />Golos Text</div>
+      <div class="sample">
+        <div class="brandline"><span class="brand">illustrations</span><span class="brief">тихая работа с текстом</span></div>
+        <div class="labels"><span>квадрат</span><span>широкий</span><span>вертикальный</span><span class="num">1000×1000</span></div>
+        <div class="body">Сборка иллюстраций из готовых объектов</div>
+      </div>
+    </div>
+
+    <div class="row b">
+      <div class="tag"><b>B · редакционный</b>Yeseva One<br />Onest</div>
+      <div class="sample">
+        <div class="brandline"><span class="brand">illustrations</span><span class="brief">тихая работа с текстом</span></div>
+        <div class="labels"><span>квадрат</span><span>широкий</span><span>вертикальный</span><span class="num">1000×1000</span></div>
+        <div class="body">Сборка иллюстраций из готовых объектов</div>
+      </div>
+    </div>
+
+    <div class="row c">
+      <div class="tag"><b>C · дидоне</b>Prata<br />Golos Text</div>
+      <div class="sample">
+        <div class="brandline"><span class="brand">illustrations</span><span class="brief">тихая работа с текстом</span></div>
+        <div class="labels"><span>квадрат</span><span>широкий</span><span>вертикальный</span><span class="num">1000×1000</span></div>
+        <div class="body">Сборка иллюстраций из готовых объектов</div>
+      </div>
+    </div>
+
+    <div class="row d">
+      <div class="tag"><b>D · антиква</b>Oranienbaum<br />Onest</div>
+      <div class="sample">
+        <div class="brandline"><span class="brand">illustrations</span><span class="brief">тихая работа с текстом</span></div>
+        <div class="labels"><span>квадрат</span><span>широкий</span><span>вертикальный</span><span class="num">1000×1000</span></div>
+        <div class="body">Сборка иллюстраций из готовых объектов</div>
+      </div>
+    </div>
+
+    <div class="row e">
+      <div class="tag"><b>E · гротеск</b>Onest 300<br />Golos Text</div>
+      <div class="sample">
+        <div class="brandline"><span class="brand">illustrations</span><span class="brief">тихая работа с текстом</span></div>
+        <div class="labels"><span>квадрат</span><span>широкий</span><span>вертикальный</span><span class="num">1000×1000</span></div>
+        <div class="body">Сборка иллюстраций из готовых объектов</div>
+      </div>
+    </div>
+  </body>
+</html>
