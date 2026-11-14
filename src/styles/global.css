@@ -1370,10 +1370,13 @@ textarea {
   white-space: nowrap;
 }
 /* переключатель формата в шапке: та же группа, что и экспорт */
+/* высота ровно как у кнопки экспорта рядом */
 .formatRow {
   display: inline-flex;
+  align-items: stretch;
   gap: 2px;
-  padding: 2px;
+  height: 28px;
+  padding: 0 2px;
   border: 1px solid var(--color-line);
   border-radius: var(--r);
 }
@@ -1382,7 +1385,7 @@ textarea {
   display: grid;
   place-items: center;
   width: 28px;
-  height: 26px;
+  height: 100%;
   border: 0;
   border-radius: 6px;
   background: none;
@@ -1492,5 +1495,60 @@ textarea {
 @media (max-width: 1080px) {
   .formatSection {
     display: block;
+  }
+}
+/* ---------- экспорт на узком экране: шторка снизу ---------- */
+
+@media (max-width: 760px) {
+  .exportPanel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    max-height: 76dvh;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-bottom: 0;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    animation: sheetUp 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .exportPanel .dialogHead {
+    padding-top: 14px;
+  }
+
+  /* две крупные карточки по центру: пальцем попадать проще */
+  .exportList {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px var(--pad) 14px;
+  }
+
+  .exportItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 18px 8px;
+    text-align: center;
+  }
+
+  .exportHint {
+    text-align: center;
+    font-size: 11px;
+  }
+
+  .exportPanel .dialogMeta {
+    text-align: center;
+    padding-bottom: 8px;
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0.6;
   }
 }
