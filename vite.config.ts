@@ -1,6 +1,26 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { cpSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
+
+/**
+ * Спрайты лежат рядом с исходниками макета и раздаются как статика: сборка
+ * просто раскладывает их в public/sprites, чтобы приложение брало файл целиком,
+ * а не держало всю библиотеку в JavaScript.
+ */
+function sprites(): Plugin {
+  const from = resolve("assets/source");
+  const to = resolve("public/sprites");
+
+  return {
+    name: "sprites",
+    buildStart() {
+      rmSync(to, { recursive: true, force: true });
+      cpSync(from, to, { recursive: true });
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   // ключ живёт только на сервере: без префикса VITE_ он не попадает в бандл
@@ -19,9 +39,8 @@ export default defineConfig(({ mode }) => {
     : undefined;
 
   return {
-    plugins: [react(), tailwindcss()],
-    // 5173 на Windows часто занимает системная служба, поэтому порт фиксируем
-    server: { host: "127.0.0.1", port: 5199, strictPort: true, proxy },
-    preview: { host: "127.0.0.1", port: 4199, strictPort: true, proxy },
+    plugins: [react(), tailwindcss(), sprites()],
+    server: { host: "127.0.0.1", proxy },
+    preview: { host: "127.0.0.1", proxy },
   };
 });
