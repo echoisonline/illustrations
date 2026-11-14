@@ -1,4 +1,4 @@
-import { formats, objectById, type Format, type Kind, type Size } from "./library";
+import { formats, type Format, type Kind, type Size } from "./library";
 
 export type Item = {
   uid: string;
@@ -8,7 +8,7 @@ export type Item = {
   x: number;
   y: number;
   rot: number;
-  /** общий масштаб сцены; если не задан — считается по наибольшему объекту */
+  /** масштаб сцены: всегда 1, предметы стоят в нарисованном размере */
   scale?: number;
 };
 
@@ -25,33 +25,6 @@ export function formatById(id: string): Format {
 export function frameFor(format: Format, size: Size): Format {
   if (size !== "S") return format;
   return { ...format, w: Math.round(format.w / 2), h: Math.round(format.h / 2) };
-}
-
-/** Насколько всё содержимое мелкого размера меньше крупного. */
-export const SIZE_RATIO = 0.7;
-
-/** Множитель для объектов и фона: S меньше L во столько же раз. */
-export function sizeRatio(size: Size): number {
-  return size === "S" ? SIZE_RATIO : 1;
-}
-
-/**
- * Запасной масштаб: по самому крупному объекту. Композиция считает масштаб
- * точнее (по всему кластеру) и кладёт его в item.scale.
- */
-export function sceneScale(items: Item[], format: Format, size: Size): number {
-  if (!items.length) return 1;
-  let maxW = 1;
-  let maxH = 1;
-  for (const item of items) {
-    const ref = objectById.get(item.id)?.sizes[size][item.kind];
-    if (!ref) continue;
-    maxW = Math.max(maxW, ref.w);
-    maxH = Math.max(maxH, ref.h);
-  }
-  const density = items.length <= 2 ? 1 : 0.9;
-  // S нарисован в половинном масштабе — компенсируем размером, а не нормировкой
-  return Math.min((format.w * 0.78) / maxW, (format.h * 0.78) / maxH) * density * sizeRatio(size);
 }
 
 export const clamp01 = (value: number) => Math.min(1, Math.max(0, value));

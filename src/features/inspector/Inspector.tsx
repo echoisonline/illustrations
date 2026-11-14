@@ -115,7 +115,7 @@ export function Inspector({ open, onClose }: { open: boolean; onClose: () => voi
         <div className="layers">
           {[...items].reverse().map((item) => {
             const object = objectById.get(item.id);
-            const reason = reasons[item.uid];
+            const reason = reasons[item.id];
             return (
               <button
                 key={item.uid}

@@ -3,7 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Braces, Check, ClipboardPaste, Plus, X } from "lucide-react";
 import { sprite, type Palette } from "../../domain/library";
 import { contrast, parsePalette, paletteSignature } from "../../domain/palette";
-import { formatById, frameFor, sceneScale } from "../../domain/scene";
+import { formatById, frameFor } from "../../domain/scene";
 import { useStore } from "../../state/store";
 
 const SLOTS: Array<{ key: string; index?: number; label: string }> = [
@@ -22,7 +22,8 @@ function Preview({ palette }: { palette: Palette }) {
   const items = useStore((s) => s.items);
   const size = useStore((s) => s.size);
   const frame = frameFor(formatById("square"), size);
-  const scale = items.find((item) => typeof item.scale === "number")?.scale ?? sceneScale(items, frame, size);
+  // масштаб в сцене всегда единица, отдельного пересчёта нет
+  const scale = 1;
   const key = `draft:${paletteSignature(palette)}`;
 
   return (

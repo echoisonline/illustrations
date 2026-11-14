@@ -76,6 +76,8 @@ export function Stage() {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
     const rect = svg.getBoundingClientRect();
+    // схлопнутый или скрытый холст даёт нули — иначе в координаты уйдёт NaN
+    if (!rect.width || !rect.height) return null;
     return {
       x: ((event.clientX - rect.left) / rect.width) * frame.w,
       y: ((event.clientY - rect.top) / rect.height) * frame.h,
@@ -89,6 +91,7 @@ export function Stage() {
     if (!item) return;
     select(uid);
     const point = toScene(event);
+    if (!point) return;
     drag.current = {
       uid,
       mode: "rotate",
@@ -109,6 +112,7 @@ export function Stage() {
     const item = items.find((i) => i.uid === uid);
     if (!item) return;
     const point = toScene(event);
+    if (!point) return;
     drag.current = {
       uid,
       mode: event.shiftKey ? "rotate" : "move",
@@ -126,6 +130,7 @@ export function Stage() {
     const state = drag.current;
     if (!state) return;
     const point = toScene(event);
+    if (!point) return;
     const item = items.find((i) => i.uid === state.uid);
     if (!item) return;
     if (state.mode === "move") {

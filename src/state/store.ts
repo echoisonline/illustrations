@@ -16,13 +16,39 @@ import { clamp01, formatById, uid, type Item } from "../domain/scene";
 
 const STORAGE_KEY = "illustrations:palettes";
 
+/** Номер запуска: ответ модели применяется, только если запуск всё ещё актуален. */
+let runStamp = 0;
+
+/** Своя палитра из хранилища: чиним форму, иначе битые данные роняют рендер. */
+function isPalette(value: unknown): value is Palette {
+  if (!value || typeof value !== "object") return false;
+  const entry = value as Partial<Palette>;
+  const trio = (colors: unknown): colors is [string, string, string] =>
+    Array.isArray(colors) &&
+    colors.length === 3 &&
+    colors.every((color) => typeof color === "string" && /^#[0-9a-f]{3,8}$/i.test(color));
+  return (
+    trio(entry.bg) &&
+    trio(entry.obj) &&
+    typeof entry.ink === "string" &&
+    /^#[0-9a-f]{3,8}$/i.test(entry.ink) &&
+    typeof entry.white === "string" &&
+    /^#[0-9a-f]{3,8}$/i.test(entry.white)
+  );
+}
+
 function loadCustom(): Record<string, Palette> {
   if (typeof localStorage === "undefined") return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, Palette>;
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const clean: Record<string, Palette> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (isPalette(value)) clean[key] = { ...value, name: value.name || "своя" };
+    }
+    return clean;
   } catch {
     return {};
   }
@@ -74,6 +100,8 @@ type Store = {
   thinking: boolean;
   /** бриф, под который собрана текущая сцена: кнопка сборки становится шаффлом */
   lastBrief: string | null;
+  /** режим, в котором собрана текущая сцена */
+  lastMode: "theme" | "objects" | null;
   /** пул вариантов сцены: по нему листается «другой вариант» */
   variants: Array<{ pattern: string; mirror: boolean; items: Item[] }>;
   variantIndex: number;
@@ -123,7 +151,9 @@ function poolFor(
   const seen = new Set<string>();
   const pool: Array<{ pattern: string; mirror: boolean; items: Item[] }> = [];
   for (const entry of list) {
-    const key = entry.items.map((item) => `${item.id}:${item.x.toFixed(3)}`).join("|");
+    const key = entry.items
+      .map((item) => `${item.id}:${item.x.toFixed(3)}:${item.y.toFixed(3)}`)
+      .join("|");
     if (seen.has(key)) continue;
     seen.add(key);
     pool.push({ pattern: entry.pattern, mirror: entry.mirror, items: entry.items });
@@ -144,6 +174,7 @@ export const useStore = create<Store>((set, get) => ({
   dirty: false,
   pose: null,
   lastBrief: null,
+  lastMode: null,
   thinking: false,
   variants: [],
   variantIndex: 0,
@@ -154,13 +185,14 @@ export const useStore = create<Store>((set, get) => ({
       // сцену правили руками — оставляем как есть, координаты заданы в долях кадра
       if (s.dirty) return { format };
       const next = recompose(s, format, s.size);
-      return next ? { format, items: next.items, reasons: next.reasons } : { format };
+      // поза может не подойти новому кадру: сцену в этом случае не трогаем
+      return next && next.items.length ? { format, items: next.items, reasons: next.reasons } : { format };
     }),
   setSize: (size) =>
     set((s) => {
       if (s.dirty) return { size };
       const next = recompose(s, s.format, size);
-      if (next) return { size, items: next.items, reasons: next.reasons };
+      if (next && next.items.length) return { size, items: next.items, reasons: next.reasons };
       return {
         size,
         items: s.items.map((item) =>
@@ -178,6 +210,7 @@ export const useStore = create<Store>((set, get) => ({
 
   run: (brief) => {
     const state = get();
+    const stamp = ++runStamp;
     const text = (brief ?? state.brief).trim();
     const format = formatById(state.format);
     const next =
@@ -191,20 +224,22 @@ export const useStore = create<Store>((set, get) => ({
     const items = pool[0]?.items ?? next.items;
     const waiting = state.inputMode === "theme";
 
-    const frame = formatById(state.format);
-
     /**
      * Сценарий темы: сначала ждём позу от модели, показывая спиннер, и только
      * потом ставим сцену. Так кадр не прыгает через две секунды после генерации.
      */
     const askAndApply = async () => {
       const pose = await askPose(text, state.format);
+      // запрос устарел: пока ждали, нажали ещё раз или сменили тему
+      if (stamp !== runStamp) return;
       if (get().brief !== text || get().dirty) {
         set({ thinking: false });
         return;
       }
       const state2 = get();
-      const posed = pose ? poolFor(text, frame, state2.size, state2.inputMode) : [];
+      // кадр берём заново: за время ожидания его могли переключить
+      const frameNow = formatById(state2.format);
+      const posed = pose ? poolFor(text, frameNow, state2.size, state2.inputMode) : [];
       const index = pose
         ? posed.findIndex((entry) => entry.pattern === pose.pattern && entry.mirror === pose.mirror)
         : -1;
@@ -225,6 +260,7 @@ export const useStore = create<Store>((set, get) => ({
     set({
       brief: text,
       lastBrief: text,
+      lastMode: state.inputMode,
       // тема: держим прошлый кадр под спиннером, сцену поставим после ответа
       items: waiting ? state.items : items,
       reasons: waiting ? state.reasons : next.reasons,

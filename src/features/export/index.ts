@@ -46,9 +46,17 @@ export async function exportPng(format: Format, tag: string) {
   const svg = buildSvg(format);
   const image = new Image();
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  // без таймаута неудачная отрисовка подвешивает промис и кнопка остаётся занятой
   await new Promise<void>((resolve, reject) => {
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error("не удалось отрисовать"));
+    const timer = setTimeout(() => reject(new Error("кадр не отрисовался")), 5000);
+    image.onload = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    image.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("не удалось отрисовать"));
+    };
     image.src = url;
   });
   const canvas = document.createElement("canvas");

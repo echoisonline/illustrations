@@ -207,7 +207,9 @@ function reasonsFor(items: Item[], plan: ScenePlan | null): Record<string, Reaso
   const reasons: Record<string, Reason> = {};
   for (const item of items) {
     const role = plan?.nodes.find((node) => node.assetId === item.id)?.role;
-    reasons[item.uid] = {
+    // ключ — сам предмет, а не uid прохода: сцена и причины считаются
+    // разными проходами, uid у них разные
+    reasons[item.id] = {
       facet: item.kind === "bg" ? "фон" : (facetsOf(item.id)[0] ?? "главный"),
       source: role === "decor" || role === "detail" ? "роль" : "бриф",
     };

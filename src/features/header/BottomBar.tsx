@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Download, Image as ImageIcon, LayoutGrid, SlidersHorizontal } from "lucide-react";
 import { formatById, frameFor } from "../../domain/scene";
 import { exportPng, exportSvg } from "../export";
@@ -12,6 +13,17 @@ export function BottomBar({ panel, setPanel }: { panel: Panel; setPanel: (panel:
   const size = useStore((s) => s.size);
   const current = frameFor(formatById(format), size);
   const tag = `${scheme}${size}`;
+  // второй клик по png не должен запускать второй экспорт
+  const [busy, setBusy] = useState(false);
+
+  const onImage = async () => {
+    setBusy(true);
+    try {
+      await exportPng(current, tag);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <nav className="bottomBar" aria-label="панели и экспорт">
@@ -35,7 +47,7 @@ export function BottomBar({ panel, setPanel }: { panel: Panel; setPanel: (panel:
         <Download size={17} />
         svg
       </button>
-      <button className="bottomItem" onClick={() => exportPng(current, tag)}>
+      <button className="bottomItem" onClick={onImage} disabled={busy}>
         <ImageIcon size={17} />
         png
       </button>

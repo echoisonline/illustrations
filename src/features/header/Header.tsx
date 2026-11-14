@@ -17,11 +17,14 @@ export function Header() {
   const thinking = useStore((s) => s.thinking);
   const items = useStore((s) => s.items);
   const lastBrief = useStore((s) => s.lastBrief);
+  const lastMode = useStore((s) => s.lastMode);
   const variants = useStore((s) => s.variants.length);
   const nextVariant = useStore((s) => s.nextVariant);
 
   // тот же запрос и сцена на месте — кнопка сборки превращается в перелистывание
-  const canShuffle = items.length > 0 && brief.trim() === lastBrief && variants > 1;
+  // режим входит в условие: иначе «тема» листала бы пул «объектов» с тем же текстом
+  const canShuffle =
+    items.length > 0 && brief.trim() === lastBrief && lastMode === inputMode && variants > 1;
   const setFormat = useStore((s) => s.setFormat);
 
   const current = frameFor(formatById(format), size);
