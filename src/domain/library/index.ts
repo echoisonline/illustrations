@@ -1,0 +1,181 @@
+import manifestJson from "./manifest.json";
+import { contentBox } from "./measure";
+
+export type Size = "L" | "S";
+export type Scheme = "a" | "b" | "c";
+export type Kind = "main" | "bg";
+export type FormatId = "square" | "wide" | "tall";
+
+export type SpriteRef = { file: string; w: number; h: number };
+export type LibraryObject = {
+  id: string;
+  name: string;
+  sizes: Record<Size, Record<Kind, SpriteRef>>;
+};
+export type Palette = {
+  name: string;
+  bg: [string, string, string];
+  ink: string;
+  obj: [string, string, string];
+  white: string;
+};
+export type Format = { id: FormatId; name: string; w: number; h: number };
+
+type Manifest = {
+  objects: LibraryObject[];
+  backgrounds: Record<Scheme, Record<Size, string>>;
+  palettes: Record<Scheme, Palette>;
+  formats: Format[];
+};
+
+export const manifest = manifestJson as Manifest;
+export const objects = manifest.objects;
+export const palettes = manifest.palettes;
+export const formats = manifest.formats;
+export const objectById = new Map(objects.map((o) => [o.id, o]));
+
+const rawModules = import.meta.glob("../../../assets/source/**/*.svg", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const raw = new Map<string, string>();
+for (const [path, text] of Object.entries(rawModules)) {
+  const key = path.split("/source/")[1];
+  if (key) raw.set(key, text.replace(/\r\n/g, "\n"));
+}
+
+export function spriteText(file: string): string {
+  const text = raw.get(file);
+  if (!text) throw new Error(`нет SVG: ${file}`);
+  return text;
+}
+
+export function stripRoot(svg: string): string {
+  const match = svg.match(/<svg[^>]*>([\s\S]*)<\/svg>\s*$/i);
+  return (match ? match[1] : svg).trim();
+}
+
+const hex = (value: string) => value.replace("#", "").padEnd(6, "0");
+
+/** Смешать два цвета: нужен отдельный тон для монохромных объектов. */
+function mix(from: string, to: string, t: number): string {
+  if (!from.startsWith("#") || !to.startsWith("#")) return from;
+  const a = hex(from);
+  const b = hex(to);
+  const channel = (i: number) => {
+    const x = parseInt(a.slice(i, i + 2), 16);
+    const y = parseInt(b.slice(i, i + 2), 16);
+    return Math.round(x + (y - x) * t)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(2)}${channel(4)}`;
+}
+
+/** Один проход по всем цветам сразу: роль → цвет целевой палитры. */
+export function recolor(markup: string, target: Palette, kind: Kind): string {
+  const pairs: Array<[string, string]> = [];
+
+  // монохромный вариант (kind === "bg") нарисован цветом фона — на фоне он бы
+  // растворился, поэтому уводим его в отдельный тон: объект читается как среда
+  // фон должен читаться как предмет, а не как призрак: заливка заметно
+  // отличается от поля, контур — тот же тёмный, что в макете
+  const field = mix(target.bg[0], target.bg[1], 0.75);
+  const plane = target.bg[2];
+
+  // исходники нарисованы в разных схемах (объекты — в A, подложка-плоскость — в B),
+  // поэтому источником считаем все базовые палитры сразу
+  for (const base of Object.values(palettes)) {
+    if (kind !== "bg") {
+      pairs.push([base.bg[0], target.bg[0]], [base.bg[1], target.bg[1]], [base.bg[2], target.bg[2]]);
+      pairs.push(
+        [base.ink, target.ink],
+        [base.obj[0], target.obj[0]],
+        [base.obj[1], target.obj[1]],
+        [base.obj[2], target.obj[2]],
+        [base.white, target.white],
+      );
+    } else {
+      pairs.push([base.bg[0], field], [base.bg[1], plane], [base.bg[2], target.bg[2]]);
+      pairs.push([base.white, mix(target.white, target.bg[2], 0.08)]);
+    }
+  }
+
+  const map = new Map(pairs.filter(([from, to]) => from.toLowerCase() !== to.toLowerCase()));
+  if (!map.size) return markup;
+  const keys = [...map.keys()].sort((a, b) => b.length - a.length);
+  const re = new RegExp(`(${keys.join("|")})`, "gi");
+  return markup.replace(re, (m) => map.get(m.toLowerCase()) ?? m);
+}
+
+const spriteCache = new Map<string, { markup: string; w: number; h: number }>();
+
+export function sprite(id: string, kind: Kind, size: Size, paletteKey: string, target: Palette) {
+  const key = `${id}:${kind}:${size}:${paletteKey}`;
+  const cached = spriteCache.get(key);
+  if (cached) return cached;
+
+  const object = objectById.get(id);
+  if (!object) throw new Error(`нет объекта: ${id}`);
+  const ref = object.sizes[size][kind];
+  const value = { markup: recolor(stripRoot(spriteText(ref.file)), target, kind), w: ref.w, h: ref.h };
+  spriteCache.set(key, value);
+  return value;
+}
+
+/** Подложка из исходников: конфетти и линии. */
+export const PLATES = {
+  confetti: "Фон.svg",
+} as const;
+
+export type PlateKind = keyof typeof PLATES;
+
+/** Подложка из макета, перекрашенная в текущую палитру. */
+export function plate(kind: PlateKind, size: Size, target: Palette) {
+  const text = spriteText(`${size}/${PLATES[kind]}`);
+  const width = Number(text.match(/<svg[^>]*width="([\d.]+)"/i)?.[1] ?? (size === "L" ? 1000 : 500));
+  const height = Number(text.match(/<svg[^>]*height="([\d.]+)"/i)?.[1] ?? (size === "L" ? 1000 : 500));
+  return plateFromText(`plate:${kind}:${size}`, text, width, height, target);
+}
+/**
+ * Подложка, нарисованная под конкретный формат: `fon/plate-wide.svg`
+ * или `fon/geometry-tall.svg`. Если файла нет — вызывающий код берёт общую.
+ */
+export function formatPlate(kind: PlateKindId, formatId: string, size: Size, target: Palette) {
+  const key = [`fon/${kind}-${formatId}.svg`, `fon/${kind}-${formatId}-${size}.svg`].find((candidate) => raw.has(candidate));
+  if (!key) return null;
+  const text = raw.get(key)!;
+  const width = Number(text.match(/<svg[^>]*width="([\d.]+)"/i)?.[1] ?? 1000);
+  const height = Number(text.match(/<svg[^>]*height="([\d.]+)"/i)?.[1] ?? 1000);
+  return { ...plateFromText(`format:${key}`, text, width, height, target), key };
+}
+
+export type PlateKindId = "plate" | "geometry";
+
+/**
+ * Общая чистка подложки: лишние defs, клипы и плашка во весь лист.
+ * Плашку убираем всегда — цвет кадра рисует сама сцена отдельным rect,
+ * иначе при уменьшении фона её обрез получался бы видимым.
+ */
+function plateFromText(cacheKey: string, text: string, width: number, height: number, target: Palette) {
+  const markup = recolor(
+    stripRoot(text)
+      .replace(/<defs[\s\S]*?<\/defs>/gi, "")
+      .replace(/\sclip-path="url\([^)]*\)"/gi, "")
+      .replace(
+        new RegExp(
+          `<rect[^>]*width="${width}"[^>]*height="${height}"[^>]*fill="(#fff{0,3}|white|#d7cdf5)"[^>]*/?>`,
+          "gi",
+        ),
+        "",
+      ),
+    target,
+    "main",
+  );
+
+  // фигуры подложки нарисованы за пределами её viewBox — берём реальные границы
+  const box = contentBox(`${cacheKey}:${target.name}:${markup.length}`, markup, width, height);
+  return { markup, box, w: width, h: height };
+}
