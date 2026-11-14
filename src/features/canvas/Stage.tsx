@@ -48,6 +48,9 @@ export function Stage() {
 
   /** долгое нажатие открывает меню на тач-экранах: правой кнопки там нет */
   const longPress = useRef<number | null>(null);
+  /** второе быстрое касание того же предмета тоже открывает меню */
+  const lastTap = useRef<{ uid: string; time: number } | null>(null);
+  const DOUBLE_TAP = 320;
 
   const cancelLongPress = () => {
     if (longPress.current !== null) {
@@ -132,7 +135,12 @@ export function Stage() {
       rot: item.rot,
       angle: Math.atan2(point.y - item.y * frame.h, point.x - item.x * frame.w),
     };
-    (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    // быстрый тап успевает отпустить указатель раньше захвата — это не ошибка
+    try {
+      (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    } catch {
+      /* указатель уже отпущен: перетаскивание всё равно начнётся по движению */
+    }
   };
 
   const onPointerDown = (event: ReactPointerEvent, uid: string) => {
@@ -142,8 +150,21 @@ export function Stage() {
     cancelLongPress();
     if (event.pointerType !== "mouse") {
       const { clientX, clientY } = event;
+      const previous = lastTap.current;
+      const now = performance.now();
+
+      // двойное касание: второе подряд быстрее 320 мс по тому же предмету
+      if (previous && previous.uid === uid && now - previous.time < DOUBLE_TAP) {
+        lastTap.current = null;
+        drag.current = null;
+        setMenu({ x: clientX, y: clientY, uid });
+        return;
+      }
+
+      lastTap.current = { uid, time: now };
       longPress.current = window.setTimeout(() => {
         longPress.current = null;
+        lastTap.current = null;
         drag.current = null;
         setMenu({ x: clientX, y: clientY, uid });
       }, 450);
@@ -162,7 +183,12 @@ export function Stage() {
       rot: item.rot,
       angle: Math.atan2(point.y - item.y * frame.h, point.x - item.x * frame.w),
     };
-    (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    // быстрый тап успевает отпустить указатель раньше захвата — это не ошибка
+    try {
+      (event.currentTarget as Element).setPointerCapture(event.pointerId);
+    } catch {
+      /* указатель уже отпущен: перетаскивание всё равно начнётся по движению */
+    }
   };
 
   /**
