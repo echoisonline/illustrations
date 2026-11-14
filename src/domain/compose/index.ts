@@ -1,4 +1,4 @@
-import { palettes, sprite, type Format, type Kind, type Size } from "../library";
+import { objectById, palettes, sprite, type Format, type Kind, type Size } from "../library";
 import { contentBox } from "../library/measure";
 import { frameFor, type Item } from "../scene";
 import type { Box, ScenePlan, SceneRole } from "./graph";
@@ -258,4 +258,28 @@ export function composeFromNames(names: string, format: Format, size: Size): Com
   const best = all.find((candidate) => candidate.ok) ?? all[0];
 
   return best ? { items: best.items, reasons: reasonsFor(best.items, plan) } : EMPTY;
+}
+
+/**
+ * Какие файлы понадобятся, чтобы собрать сцену по этому брифу. Нужен до расчёта:
+ * геометрия считается по реальным границам рисунка, а разметка грузится лениво.
+ */
+export function filesForBrief(
+  brief: string,
+  mode: "theme" | "objects",
+  size: Size,
+): string[] {
+  const plans: ScenePlan[] =
+    mode === "objects"
+      ? [planFromNames(parseNames(brief).ids)].filter((plan): plan is ScenePlan => Boolean(plan))
+      : resolvePlans(brief);
+
+  const files = new Set<string>();
+  for (const plan of plans) {
+    for (const node of plan.nodes) {
+      const file = objectById.get(node.assetId)?.sizes[size][node.kind].file;
+      if (file) files.add(file);
+    }
+  }
+  return [...files];
 }

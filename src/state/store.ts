@@ -4,11 +4,13 @@ import {
   composeCandidates,
   composeFromNames,
   composeNameCandidates,
+  filesForBrief,
   moodScheme,
   readBrief,
   type Reason,
 } from "../domain/compose";
 import { askPose, type Pose } from "../domain/compose/pose";
+import { ensureSprites, hasSprite } from "../domain/library";
 import { palettes as basePalettes } from "../domain/library";
 import type { BackgroundVariant } from "../domain/background";
 import type { FormatId, Kind, Palette, Size } from "../domain/library";
@@ -210,8 +212,31 @@ export const useStore = create<Store>((set, get) => ({
 
   run: (brief) => {
     const state = get();
-    const stamp = ++runStamp;
     const text = (brief ?? state.brief).trim();
+    if (!text) return;
+
+    // Геометрия считается по реальным границам рисунка, а разметка грузится
+    // по одному файлу: пока нужного нет — держим индикатор и ждём загрузку.
+    const files = filesForBrief(text, state.inputMode, state.size);
+    if (!files.every((file) => hasSprite(file))) {
+      set({
+        brief: text,
+        lastBrief: text,
+        lastMode: state.inputMode,
+        dirty: false,
+        pose: null,
+        thinking: true,
+        variants: [],
+        variantIndex: 0,
+        selected: null,
+      });
+      void ensureSprites(files).then(() => {
+        if (get().brief === text) get().run(text);
+      });
+      return;
+    }
+
+    const stamp = ++runStamp;
     const format = formatById(state.format);
     const next =
       state.inputMode === "objects"

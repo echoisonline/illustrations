@@ -17,3 +17,6 @@ docs/palette-*.png
 docs/fonts.png
 public/sprites
 .vercel
+docs/.video
+docs/.frames
+docs/.demo
