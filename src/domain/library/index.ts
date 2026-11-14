@@ -40,22 +40,58 @@ export const objectById = new Map(objects.map((o) => [o.id, o]));
  * поэтому дальше вся работа синхронная, а JavaScript остаётся лёгким.
  */
 const raw = new Map<string, string>();
+const failed = new Set<string>();
+const asked = new Map<string, Promise<void>>();
 
-export function loadSprites(payload: Record<string, string>): void {
-  raw.clear();
+/** Для тестов: спрайты читаются с диска и складываются сюда целиком. */
+export function putSprites(payload: Record<string, string>): void {
   for (const [file, text] of Object.entries(payload)) {
     raw.set(file, text.replace(/\r\n/g, "\n"));
   }
 }
 
-export function spritesLoaded(): boolean {
-  return raw.size > 0;
+export function hasSprite(file: string): boolean {
+  return raw.has(file);
 }
 
 export function spriteText(file: string): string {
   const text = raw.get(file);
   if (!text) throw new Error(`нет SVG: ${file}`);
   return text;
+}
+
+/**
+ * Догружает недостающие спрайты. Файлы лежат в public/sprites и берутся по
+ * одному, поэтому сцена не ждёт всю библиотеку. Повторный вызов того же файла
+ * не делает второй запрос.
+ */
+export function ensureSprites(files: string[]): Promise<void> {
+  const missing = files.filter((file) => file && !raw.has(file) && !failed.has(file));
+  const pending = missing.map((file) => {
+    const known = asked.get(file);
+    if (known) return known;
+
+    const request = fetch(`${import.meta.env.BASE_URL}sprites/${file}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.text();
+      })
+      .then((text) => {
+        raw.set(file, text.replace(/\r\n/g, "\n"));
+      })
+      .catch(() => {
+        // нет файла — помечаем, чтобы не просить его снова каждый кадр
+        failed.add(file);
+      })
+      .finally(() => {
+        asked.delete(file);
+      });
+
+    asked.set(file, request);
+    return request;
+  });
+
+  return Promise.all(pending).then(() => undefined);
 }
 
 export function stripRoot(svg: string): string {

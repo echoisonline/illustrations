@@ -1,8 +1,9 @@
 import { GripVertical, X } from "lucide-react";
-import type { DragEvent } from "react";
-import { objects, sprite } from "../../domain/library";
+import { useEffect, type DragEvent } from "react";
+import { hasSprite, objects, sprite } from "../../domain/library";
 import { contentBox, contentViewBox } from "../../domain/library/measure";
 import { useStore } from "../../state/store";
+import { useSprites } from "../../state/sprites";
 
 export const DRAG_TYPE = "text/illustration-object";
 
@@ -12,6 +13,13 @@ export function LibraryRail({ open, onClose }: { open: boolean; onClose: () => v
   const palettes = useStore((s) => s.palettes);
   const add = useStore((s) => s.add);
   const palette = palettes[scheme] ?? palettes.a;
+  // плитки догружаются в фоне: экран не ждёт двадцать превью
+  useSprites((s) => s.version);
+  const requestSprites = useSprites((s) => s.request);
+
+  useEffect(() => {
+    requestSprites(objects.map((object) => object.sizes[size].main.file));
+  }, [size]);
 
   const startDrag = (event: DragEvent<HTMLButtonElement>, id: string) => {
     event.dataTransfer.setData(DRAG_TYPE, id);
@@ -32,6 +40,16 @@ export function LibraryRail({ open, onClose }: { open: boolean; onClose: () => v
 
       <div className="objects">
         {objects.map((object) => {
+          const file = object.sizes[size].main.file;
+          // пока разметки нет, плитка остаётся пустой рамкой
+          if (!hasSprite(file)) {
+            return (
+              <button key={object.id} className="object" disabled aria-label={object.name}>
+                <span className="objectArt" />
+                <span className="objectName">{object.name}</span>
+              </button>
+            );
+          }
           const shape = sprite(object.id, "main", size, scheme, palette);
           const key = `${object.id}:${size}:${scheme}`;
           const box = contentBox(key, shape.markup, shape.w, shape.h);

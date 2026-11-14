@@ -1,5 +1,5 @@
 import type { Format, Palette, Size } from "./library";
-import { formatPlate, plate, type PlateKindId } from "./library";
+import { formatPlate, hasSprite, plate, type PlateKindId } from "./library";
 
 /** Фон композиции: подложка, геометрия или чистый цвет схемы. */
 export type BackgroundVariant = PlateKindId | "flat";
@@ -36,9 +36,11 @@ export function backgroundFor(
   const cached = backgroundCache.get(key);
   if (cached) return cached;
 
+  // файла может ещё не быть в памяти: тогда подложки просто нет, а загрузку
+  // заказывает холст — иначе здесь был бы синхронный бросок
   const artwork =
     formatPlate(variant, format.id, size, palette) ??
-    (variant === "plate" ? plate("confetti", size, palette) : null);
+    (variant === "plate" && hasSprite(`${size}/Фон.svg`) ? plate("confetti", size, palette) : null);
   if (!artwork) return [];
 
   // отдельного ассета под S нет: лист 1000×1000 просто вписываем в кадр 500×500,

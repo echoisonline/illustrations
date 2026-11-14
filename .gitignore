@@ -14,4 +14,4 @@ docs/bench-*.png
 docs/preview-*.png
 docs/palette-*.png
 docs/fonts.png
-public/sprites.json
+public/sprites

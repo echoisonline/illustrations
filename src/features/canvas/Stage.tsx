@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { objectById, sprite } from "../../domain/library";
+import { hasSprite, objectById, sprite } from "../../domain/library";
+import { useSprites } from "../../state/sprites";
 import { DRAG_TYPE } from "../library/LibraryRail";
 import { backgroundFor } from "../../domain/background";
 import { contentBox } from "../../domain/library/measure";
@@ -31,12 +32,20 @@ type DragState = {
 export function Stage() {
   const items = useStore((s) => s.items);
   const thinking = useStore((s) => s.thinking);
+  // любая загрузка спрайта меняет версию — холст перерисуется
+  useSprites((s) => s.version);
+  const requestSprites = useSprites((s) => s.request);
+  const spritesLoading = useSprites((s) => s.loading > 0);
+  const busy = thinking || spritesLoading;
+
   const format = useStore((s) => s.format);
   const size = useStore((s) => s.size);
   const scheme = useStore((s) => s.scheme);
   const palettes = useStore((s) => s.palettes);
   const selected = useStore((s) => s.selected);
   const [menu, setMenu] = useState<{ x: number; y: number; uid: string } | null>(null);
+
+
   /** долгое нажатие открывает меню на тач-экранах: правой кнопки там нет */
   const longPress = useRef<number | null>(null);
 
@@ -47,6 +56,18 @@ export function Stage() {
     }
   };
   const bg = useStore((s) => s.bg);
+  // что понадобится нарисовать: предметы сцены и подложка текущего кадра
+  const needed = items
+    .map((item) => objectById.get(item.id)?.sizes[size][item.kind].file)
+    .filter((file): file is string => Boolean(file));
+  const plateFiles =
+    bg === "flat"
+      ? []
+      : [`fon/${bg}-${format}.svg`, `fon/${bg}-${format}-${size}.svg`, `${size}/Фон.svg`];
+  const missing = [...needed, ...plateFiles].filter((file) => !hasSprite(file));
+  useEffect(() => {
+    if (missing.length) requestSprites(missing);
+  }, [missing.join("|")]);
   const select = useStore((s) => s.select);
   const move = useStore((s) => s.move);
   const rotate = useStore((s) => s.rotate);
@@ -302,7 +323,7 @@ export function Stage() {
         onDragLeave={onDropDragLeave}
         onDrop={onDrop}
       >
-        <div className="mat" data-busy={thinking}>
+        <div className="mat" data-busy={busy}>
           <div className="sheetCaption t-mono">
             <span>{current.name}</span>
             <span>
@@ -340,6 +361,9 @@ export function Stage() {
                 />
               ))}
             {items.map((item, index) => {
+              // разметка ещё не приехала — предмет не рисуем, но кадр не ломаем
+              const file = objectById.get(item.id)?.sizes[size][item.kind].file;
+              if (!file || !hasSprite(file)) return null;
               const shape = sprite(item.id, item.kind, size, scheme, palette);
               const box = contentBox(`${item.id}:${item.kind}:${size}:${scheme}`, shape.markup, shape.w, shape.h);
               const scale = item.scale ?? fallbackScale;
@@ -400,7 +424,7 @@ export function Stage() {
               );
             })}
           </svg>
-          {thinking && (
+          {busy && (
             <div className="busy">
               <Spinner size={28} />
             </div>
