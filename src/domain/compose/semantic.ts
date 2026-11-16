@@ -63,7 +63,7 @@ const PAIRS: Array<{ facet: string; ids: [string, string] }> = [
   { facet: "авторство", ids: ["ruchka", "kniga"] },
   { facet: "работа", ids: ["lampa", "papka"] },
   { facet: "цифра", ids: ["telefon", "pazl"] },
-  { facet: "эстетика", ids: ["vaza", "ruchka"] },
+  { facet: "эстетика", ids: ["vaza", "lampa"] },
   { facet: "история", ids: ["kniga", "ruchka"] },
 ];
 
@@ -100,6 +100,12 @@ export const DECOR = ["lampa", "vaza"];
 
 /** Декор уместен не в каждой теме: лампа в сцене про деньги — лишний предмет. */
 const DECOR_FACETS = ["идея", "работа", "забота", "эстетика"];
+
+/**
+ * Темы про дом и красоту: здесь ваза — не фон, а сам предмет.
+ * Иначе «уют» превращался в книгу с пазлом, а ваза уходила в декор.
+ */
+const HOME_FACETS = new Set(["забота", "эстетика"]);
 
 /**
  * Кто читается главным при обрезе краем: плоские «самодостаточные» предметы.
@@ -192,10 +198,8 @@ function planFrom(heroId: string, supportId: string | null, detailId: string | n
 
   if (supportId) {
     let relation = PAIR_RELATION[`${heroId}+${supportId}`] ?? PAIR_RELATION[`${supportId}+${heroId}`] ?? "near";
-    // «на» допустимо только на плоскость: телефон на наушниках — ошибка
-    if (relation === "on" && !(SURFACES.includes(heroId) && SURFACES.includes(supportId))) {
-      relation = "near";
-    }
+    // «на» требует плоскости под низом: ручку на папку положить можно,
+    // а телефон на наушники — нет, наушники не плоскость
     if (relation === "on" && !SURFACES.includes(heroId)) relation = "near";
     nodes.push({ assetId: supportId, role: "support", kind: "main" });
     relations.push({ source: supportId, target: heroId, type: relation });
@@ -226,26 +230,37 @@ export function resolvePlans(brief: string): ScenePlan[] {
     if (!pair) continue;
 
     let [heroId, supportId] = pair.ids;
-    if (heroRank(heroId) > heroRank(supportId)) [heroId, supportId] = [supportId, heroId];
+
+    // в темах про дом и красоту герой — ваза: это и есть предмет истории
+    const home = HOME_FACETS.has(facet) && pair.ids.includes("vaza");
+    if (home) {
+      heroId = "vaza";
+      supportId = pair.ids.find((id) => id !== "vaza") ?? "";
+    } else if (heroRank(heroId) > heroRank(supportId)) {
+      [heroId, supportId] = [supportId, heroId];
+    }
 
     // лампа и ваза не бывают героем: это декор, он уходит в фон
     let decorId: string | null = null;
-    if (DECOR.includes(supportId)) {
+    if (DECOR.includes(supportId) && !home) {
       decorId = supportId;
       supportId = "";
     }
-    if (!decorId) decorId = pickDecor(facet, [heroId, supportId].filter(Boolean));
+    if (!decorId && !home) decorId = pickDecor(facet, [heroId, supportId].filter(Boolean));
 
     // если героем остался «нечитаемый» предмет (ручка, монета, пазл), берём
     // крупный из библиотеки: обрез краем такой герой не переживает
-    if (heroRank(heroId) > 4) {
+    if (!home && heroRank(heroId) > 4) {
       const readable = HERO_ORDER.slice(0, 4).find(
         (id) => id !== heroId && id !== supportId && id !== decorId,
       );
       if (readable) heroId = readable;
     }
 
-    const detailId = ACCENTS.find((id) => id !== heroId && id !== supportId && id !== decorId) ?? null;
+    // деталь ставим только к обычному герою: пазл на вазе читается как мусор
+    const detailId = home
+      ? null
+      : ACCENTS.find((id) => id !== heroId && id !== supportId && id !== decorId) ?? null;
     plans.push(
       planFrom(heroId, supportId || null, detailId, decorId, facet, `${heroId} и ${supportId || "окружение"}`),
     );

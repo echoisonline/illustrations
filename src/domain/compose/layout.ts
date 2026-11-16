@@ -116,12 +116,17 @@ const PATTERNS: Pattern[] = [
   {
     id: "вертикаль",
     about: "предмет под предметом, кадр держится на вертикальной оси",
-    fits: (ctx) => Boolean(ctx.boxes.support),
+    // только для вертикального кадра: в квадрате это читается как парящий предмет
+    // если предмет можно положить на другой, ставить его отдельно сверху незачем
+    fits: (ctx) => ctx.format === "tall" && Boolean(ctx.boxes.support) && ctx.relation !== "on",
     build: (ctx) => {
       const { boxes, frame } = ctx;
       const hero = bottomAt(frame, boxes.hero!, 0.5, 0.96);
       const supportBox = boxes.support!;
-      const supportTop = 0.96 - (boxes.hero!.h + frame.h * 0.04) / frame.h;
+      // второй предмет слегка наезжает на верх первого: рамка картинки шире
+      // рисунка (тень), и без нахлёста предмет читается как парящий
+      const heroHeight = boxes.hero!.h / frame.h;
+      const supportTop = 0.96 - heroHeight + heroHeight * 0.28;
       const spots: Spot[] = [{ role: "hero", ...hero }];
       if (supportTop > 0.05) spots.push({ role: "support", ...bottomAt(frame, supportBox, 0.5, supportTop) });
       if (boxes.detail) spots.push({ role: "detail", ...at(0.22, 0.16) });

@@ -147,7 +147,7 @@ function candidatesFromPlans(
     const dropDetail = keepAll ? false : crowded || smallSupport;
     // если герой занял кадр целиком, декор в тему не ставим: он ляжет на него
     const dropDecor =
-      !keepAll && Boolean(heroNode) && (boxes[heroNode!.assetId]?.w ?? 0) > frame.w * 1.05;
+      !keepAll && Boolean(heroNode) && (boxes[heroNode!.assetId]?.w ?? 0) > frame.w * 1.6;
     const plan: ScenePlan = {
       ...cast,
       nodes: cast.nodes.filter(
