@@ -1207,6 +1207,13 @@ textarea {
     margin: 0 12px;
   }
 
+  /* 16px — иначе Safari на iPhone зумит страницу при фокусе на поле */
+  .briefField input,
+  .slotHex,
+  .jsonBox,
+  .nameInput {
+    font-size: 16px;
+  }
 
   .stageBar {
     flex-direction: column;

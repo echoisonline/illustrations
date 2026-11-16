@@ -371,7 +371,11 @@ export function Stage() {
             onPointerMove={onPointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
-            onPointerDown={() => select(null)}
+            onPointerDown={() => {
+              // на iPhone фокус в поле ввода держит зум — снимаем его при тапе по кадру
+              (document.activeElement as HTMLElement | null)?.blur?.();
+              select(null);
+            }}
           >
             {/* фон — обычная фигура в файле, иначе он терялся при экспорте */}
             <rect id="фон" x={0} y={0} width={frame.w} height={frame.h} fill={palette.bg[0]} />
