@@ -1,5 +1,6 @@
 import { ArrowRight, Shapes, Shuffle, Wand2 } from "lucide-react";
 import { ExportDialog } from "../export/ExportDialog";
+import { Suggestions, useSuggestions } from "./Suggestions";
 import { useStore } from "../../state/store";
 
 export function Header() {
@@ -21,6 +22,7 @@ export function Header() {
   const canShuffle =
     items.length > 0 && brief.trim() === lastBrief && lastMode === inputMode && variants > 1;
   const setFormat = useStore((s) => s.setFormat);
+  const suggest = useSuggestions();
 
 
 
@@ -57,9 +59,11 @@ export function Header() {
           </button>
         </div>
 
-        <div className="briefField">
+        <div className="briefField" ref={suggest.box}>
           <input
             value={brief}
+            onFocus={() => suggest.setOpen(true)}
+            onPointerDown={() => suggest.setOpen(true)}
             onChange={(event) => setBrief(event.target.value)}
             placeholder={inputMode === "theme" ? "музыка" : "лампа, папка, ручка"}
             aria-label={inputMode === "theme" ? "тема" : "названия объектов"}
@@ -74,6 +78,8 @@ export function Header() {
           >
             {canShuffle ? <Shuffle size={15} /> : <ArrowRight size={15} />}
           </button>
+
+          <Suggestions open={suggest.open} onPick={() => suggest.setOpen(false)} />
         </div>
       </form>
 

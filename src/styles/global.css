@@ -1207,9 +1207,6 @@ textarea {
     margin: 0 12px;
   }
 
-  .briefField input {
-    font-size: 13.5px;
-  }
 
   .stageBar {
     flex-direction: column;
@@ -1564,4 +1561,108 @@ body {
 .stageArea {
   overscroll-behavior: contain;
   touch-action: none;
+}
+/* ---------- готовые формулировки под полем ввода ---------- */
+
+.briefField {
+  position: relative;
+}
+
+.suggest {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: none;
+  gap: 12px;
+  max-height: min(58vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r-lg);
+  background: var(--color-paper);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--color-ink) 12%, transparent);
+}
+
+.suggest[data-open="true"] {
+  display: grid;
+}
+
+.suggestGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.suggestHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--color-muted);
+}
+
+.suggestList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* в стиле остальных контролов: тот же радиус, та же рамка, без «таблеток» */
+.suggestChip {
+  padding: 0 10px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.suggestChip:hover {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-ink) 26%, transparent);
+}
+
+.suggestChip[data-on="true"] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+  border-color: color-mix(in srgb, var(--color-ink) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ink) 12%, transparent);
+}
+
+.suggestFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+  color: var(--color-muted);
+}
+
+.suggestFoot .btn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .suggest {
+    left: -12px;
+    right: -12px;
+    max-height: 60dvh;
+  }
+
+  .suggestChip {
+    height: 32px;
+    font-size: 12.5px;
+    padding: 0 12px;
+  }
 }
