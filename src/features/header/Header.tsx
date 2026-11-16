@@ -1,4 +1,4 @@
-import { ArrowRight, Shapes, Shuffle, Wand2 } from "lucide-react";
+import { ArrowRight, ChevronDown, Shapes, Shuffle, Wand2 } from "lucide-react";
 import { ExportDialog } from "../export/ExportDialog";
 import { Suggestions, useSuggestions } from "./Suggestions";
 import { useStore } from "../../state/store";
@@ -60,6 +60,19 @@ export function Header() {
         </div>
 
         <div className="briefField" ref={suggest.box}>
+          {/* видимая ручка выпадающего списка: без неё непонятно, что подсказки существуют */}
+          <button
+            type="button"
+            className="briefToggle"
+            data-open={suggest.open}
+            aria-label="примеры формулировок"
+            aria-expanded={suggest.open}
+            title="примеры формулировок"
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={() => suggest.setOpen((value) => !value)}
+          >
+            <ChevronDown size={15} />
+          </button>
           <input
             value={brief}
             onFocus={() => suggest.setOpen(true)}

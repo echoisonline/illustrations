@@ -1575,6 +1575,39 @@ body {
   position: relative;
 }
 
+/* ручка выпадающего списка слева в поле */
+.briefToggle {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  margin-left: 4px;
+  border: 0;
+  border-radius: var(--r);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.briefToggle:hover {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+}
+
+.briefToggle svg {
+  transition: transform 0.18s ease;
+}
+
+.briefToggle[data-open="true"] {
+  color: var(--color-ink);
+}
+
+.briefToggle[data-open="true"] svg {
+  transform: rotate(180deg);
+}
+
 .suggest {
   position: absolute;
   top: calc(100% + 6px);
