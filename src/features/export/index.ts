@@ -31,11 +31,14 @@ export function buildSvg(format: Format): string {
 
 function download(name: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
 }
 
 export function exportSvg(format: Format, tag: string) {
@@ -46,25 +49,39 @@ export async function exportPng(format: Format, tag: string) {
   const svg = buildSvg(format);
   const image = new Image();
   const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-  // без таймаута неудачная отрисовка подвешивает промис и кнопка остаётся занятой
-  await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("кадр не отрисовался")), 5000);
-    image.onload = () => {
-      clearTimeout(timer);
-      resolve();
-    };
-    image.onerror = () => {
-      clearTimeout(timer);
-      reject(new Error("не удалось отрисовать"));
-    };
-    image.src = url;
-  });
-  const canvas = document.createElement("canvas");
-  canvas.width = format.w;
-  canvas.height = format.h;
-  canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
-  URL.revokeObjectURL(url);
-  canvas.toBlob((blob) => {
-    if (blob) download(`illustration-${format.id}-${tag}.png`, blob);
-  }, "image/png");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // без таймаута неудачная отрисовка подвешивает промис и кнопка остаётся занятой
+    await new Promise<void>((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error("кадр не отрисовался")), 5000);
+      image.onload = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      image.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error("не удалось отрисовать"));
+      };
+      image.src = url;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = format.w;
+    canvas.height = format.h;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("не удалось создать холст");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((value) => {
+        if (value) resolve(value);
+        else reject(new Error("не удалось создать PNG"));
+      }, "image/png");
+    });
+    download(`illustration-${format.id}-${tag}.png`, blob);
+  } finally {
+    clearTimeout(timer);
+    image.onload = null;
+    image.onerror = null;
+    image.src = "";
+    URL.revokeObjectURL(url);
+  }
 }

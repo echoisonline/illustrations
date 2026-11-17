@@ -2,7 +2,7 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Braces, Check, ClipboardPaste, Plus, X } from "lucide-react";
 import { sprite, type Palette } from "../../domain/library";
-import { contrast, parsePalette, paletteSignature } from "../../domain/palette";
+import { contrast, parsePalette } from "../../domain/palette";
 import { formatById, frameFor } from "../../domain/scene";
 import { useStore } from "../../state/store";
 
@@ -24,12 +24,11 @@ function Preview({ palette }: { palette: Palette }) {
   const frame = frameFor(formatById("square"), size);
   // масштаб в сцене всегда единица, отдельного пересчёта нет
   const scale = 1;
-  const key = `draft:${paletteSignature(palette)}`;
 
   return (
     <svg viewBox={`0 0 ${frame.w} ${frame.h}`} className="dialogPreview" style={{ background: palette.bg[0] }}>
       {items.map((item) => {
-        const shape = sprite(item.id, item.kind, size, key, palette);
+        const shape = sprite(item.id, item.kind, size, undefined, palette);
         return (
           <g
             key={item.uid}

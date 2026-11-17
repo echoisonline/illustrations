@@ -146,11 +146,19 @@ export function recolor(markup: string, target: Palette, kind: Kind): string {
 }
 
 const spriteCache = new Map<string, { markup: string; w: number; h: number }>();
+const SPRITE_CACHE_LIMIT = 128;
 
-export function sprite(id: string, kind: Kind, size: Size, paletteKey: string, target: Palette, tone?: "warm") {
-  const key = `${id}:${kind}:${size}:${paletteKey}:${JSON.stringify(target)}:${tone ?? ""}`;
-  const cached = spriteCache.get(key);
-  if (cached) return cached;
+export function sprite(id: string, kind: Kind, size: Size, paletteKey: string | undefined, target: Palette, tone?: "warm") {
+  // Черновое превью не должно оставаться в глобальном кэше после закрытия диалога.
+  const cacheable = paletteKey !== undefined;
+  const colors = [target.bg, target.ink, target.obj, target.white];
+  const key = `${id}:${kind}:${size}:${JSON.stringify(colors)}:${tone ?? ""}`;
+  const cached = cacheable ? spriteCache.get(key) : undefined;
+  if (cached) {
+    spriteCache.delete(key);
+    spriteCache.set(key, cached);
+    return cached;
+  }
 
   const object = objectById.get(id);
   if (!object) throw new Error(`нет объекта: ${id}`);
@@ -160,7 +168,10 @@ export function sprite(id: string, kind: Kind, size: Size, paletteKey: string, t
     ? source.replace(/#d7cdf5|#f9ecb0/gi, (color) => color.toLowerCase() === "#d7cdf5" ? palettes.a.obj[0] : palettes.a.obj[1])
     : source;
   const value = { markup: recolor(markup, target, kind), w: ref.w, h: ref.h };
-  spriteCache.set(key, value);
+  if (cacheable) {
+    spriteCache.set(key, value);
+    if (spriteCache.size > SPRITE_CACHE_LIMIT) spriteCache.delete(spriteCache.keys().next().value!);
+  }
   return value;
 }
 
