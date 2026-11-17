@@ -2,6 +2,7 @@ import { ArrowRight, ChevronDown, Shapes, Shuffle, Wand2 } from "lucide-react";
 import { ExportDialog } from "../export/ExportDialog";
 import { Suggestions, useSuggestions } from "./Suggestions";
 import { useStore } from "../../state/store";
+import { TipButton } from "../../ui/TipButton";
 
 export function Header() {
   const brief = useStore((s) => s.brief);
@@ -15,16 +16,15 @@ export function Header() {
   const lastBrief = useStore((s) => s.lastBrief);
   const lastMode = useStore((s) => s.lastMode);
   const variants = useStore((s) => s.variants.length);
+  const variantIndex = useStore((s) => s.variantIndex);
   const nextVariant = useStore((s) => s.nextVariant);
 
-  // тот же запрос и сцена на месте — кнопка сборки превращается в перелистывание
-  // режим входит в условие: иначе «тема» листала бы пул «объектов» с тем же текстом
+  // листать варианты можно, только пока сцена собрана под этот же запрос:
+  // режим входит в условие, иначе «тема» листала бы пул «объектов» с тем же текстом
   const canShuffle =
     items.length > 0 && brief.trim() === lastBrief && lastMode === inputMode && variants > 1;
   const setFormat = useStore((s) => s.setFormat);
   const suggest = useSuggestions();
-
-
 
   return (
     <header className="top">
@@ -34,14 +34,14 @@ export function Header() {
         className="brief"
         onSubmit={(event) => {
           event.preventDefault();
-          if (canShuffle) nextVariant();
-          else run();
+          run();
         }}
       >
         <div className="modeSwitch" role="group" aria-label="сценарий">
           <button
             type="button"
             data-on={inputMode === "theme"}
+            aria-pressed={inputMode === "theme"}
             title="собрать по теме"
             onClick={() => setInputMode("theme")}
           >
@@ -51,6 +51,7 @@ export function Header() {
           <button
             type="button"
             data-on={inputMode === "objects"}
+            aria-pressed={inputMode === "objects"}
             title="собрать по названиям объектов"
             onClick={() => setInputMode("objects")}
           >
@@ -74,6 +75,7 @@ export function Header() {
             <ChevronDown size={15} />
           </button>
           <input
+            id="scene-brief"
             value={brief}
             onFocus={() => suggest.setOpen(true)}
             onPointerDown={() => suggest.setOpen(true)}
@@ -82,17 +84,30 @@ export function Header() {
             aria-label={inputMode === "theme" ? "тема" : "названия объектов"}
             spellCheck={false}
           />
-          <button
-            className="iconBtn"
-            type="submit"
-            disabled={thinking}
-            aria-label={canShuffle ? "другой вариант" : "собрать"}
-            title={canShuffle ? "другой вариант" : "собрать"}
-          >
-            {canShuffle ? <Shuffle size={15} /> : <ArrowRight size={15} />}
-          </button>
-
           <Suggestions open={suggest.open} onPick={() => suggest.setOpen(false)} />
+        </div>
+
+        {/* сборка и перелистывание — разные действия: раньше их прятала одна кнопка */}
+        <div className="briefActions">
+          <button className="btnPrimary" type="submit" disabled={!brief.trim() || thinking}>
+            <ArrowRight size={14} />
+            собрать
+          </button>
+          <button
+            className="btn"
+            type="button"
+            disabled={!canShuffle}
+            onClick={nextVariant}
+            aria-label="другой вариант"
+          >
+            <Shuffle size={14} />
+            другой вариант
+            {canShuffle && (
+              <span className="t-mono briefCount">
+                {variantIndex + 1} / {variants}
+              </span>
+            )}
+          </button>
         </div>
       </form>
 
@@ -104,11 +119,11 @@ export function Header() {
           ["wide", "широкий", 17, 9],
           ["tall", "вертикальный", 9, 17],
         ] as const).map(([id, label, w, h]) => (
-          <button key={id} data-on={format === id} onClick={() => setFormat(id)} title={label} aria-label={label}>
+          <TipButton key={id} data-on={format === id} onClick={() => setFormat(id)} label={label} side="bottom">
             <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
               <rect x={(22 - w) / 2} y={(22 - h) / 2} width={w} height={h} rx={2} />
             </svg>
-          </button>
+          </TipButton>
         ))}
       </div>
 

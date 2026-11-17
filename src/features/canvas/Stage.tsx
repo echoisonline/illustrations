@@ -8,6 +8,7 @@ import { formatById, frameFor } from "../../domain/scene";
 import { useStore } from "../../state/store";
 
 import { Spinner } from "../../ui/Spinner";
+import { StageEmpty } from "./StageEmpty";
 import {
   ArrowDown,
   ArrowUp,
@@ -43,6 +44,8 @@ export function Stage() {
   const scheme = useStore((s) => s.scheme);
   const palettes = useStore((s) => s.palettes);
   const selected = useStore((s) => s.selected);
+  // пустой холст показывает три готовые темы; пока идёт сборка — спиннер
+  const empty = items.length === 0 && !thinking;
   const [menu, setMenu] = useState<{ x: number; y: number; uid: string } | null>(null);
 
 
@@ -77,6 +80,8 @@ export function Stage() {
   const add = useStore((s) => s.add);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  /** пустой холст: та же рамка, только пунктиром — по ней считаем точку броска */
+  const ghostRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
   const drag = useRef<DragState | null>(null);
   const [fit, setFit] = useState(1);
@@ -276,14 +281,14 @@ export function Stage() {
     event.preventDefault();
     markDrop(false);
     const id = event.dataTransfer.getData(DRAG_TYPE) || event.dataTransfer.getData("text/plain");
-    const svg = svgRef.current;
-    if (!id || !objectById.has(id) || !svg) return;
-    const rect = svg.getBoundingClientRect();
+    // на пустом холсте кадра-рисунка ещё нет, но есть пунктирная рамка того же размера
+    const box = (svgRef.current ?? ghostRef.current)?.getBoundingClientRect();
+    if (!id || !objectById.has(id) || !box) return;
     add(
       id,
       "main",
-      Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
-      Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+      Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)),
+      Math.min(1, Math.max(0, (event.clientY - box.top) / box.height)),
     );
   };
 
@@ -349,117 +354,136 @@ export function Stage() {
         onDragLeave={onDropDragLeave}
         onDrop={onDrop}
       >
-        <div className="mat" data-busy={busy}>
-          <div className="sheetCaption t-mono">
-            <span>{current.name}</span>
-            <span>
-              {frame.w}×{frame.h}
-            </span>
-          </div>
-          <svg
-            id="stage"
-            ref={svgRef}
-            className="sheet"
-            width={frame.w}
-            height={frame.h}
-            viewBox={`0 0 ${frame.w} ${frame.h}`}
-            style={{
-              background: palette.bg[0],
-              width: Math.floor(frame.w * fit),
-              height: Math.floor(frame.h * fit),
-            }}
-            onPointerMove={onPointerMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            onPointerDown={() => {
-              // на iPhone фокус в поле ввода держит зум — снимаем его при тапе по кадру
-              (document.activeElement as HTMLElement | null)?.blur?.();
-              select(null);
-            }}
-          >
-            {/* фон — обычная фигура в файле, иначе он терялся при экспорте */}
-            <rect id="фон" x={0} y={0} width={frame.w} height={frame.h} fill={palette.bg[0]} />
-            {bg !== "flat" &&
-              backgroundFor(bg, frame, size, palette).map((layer, index) => (
-                <g
-                  key={index}
-                  data-bg
-                  id="подложка"
-                  opacity={layer.opacity}
-                  transform={`translate(${layer.x.toFixed(2)} ${layer.y.toFixed(2)}) scale(${layer.scale.toFixed(4)})`}
-                  dangerouslySetInnerHTML={{ __html: layer.markup }}
-                />
-              ))}
-            {items.map((item, index) => {
-              // разметка ещё не приехала — предмет не рисуем, но кадр не ломаем
-              const file = objectById.get(item.id)?.sizes[size][item.kind].file;
-              if (!file || !hasSprite(file)) return null;
-              const shape = sprite(item.id, item.kind, size, scheme, palette, item.tone);
-              const box = contentBox(`${item.id}:${item.kind}:${size}:${scheme}`, shape.markup, shape.w, shape.h);
-              const scale = item.scale ?? fallbackScale;
-              const cx = (box.x + box.w / 2) * scale;
-              const cy = (box.y + box.h / 2) * scale;
-              const layerName = objectById.get(item.id)?.name ?? item.id;
-              return (
-                <g
-                  key={item.uid}
-                  id={`${layerName}-${index + 1}`}
-                  data-item
-                  data-selected={item.uid === selected}
-                  className="item"
-                  transform={`translate(${(item.x * frame.w).toFixed(2)} ${(item.y * frame.h).toFixed(2)}) rotate(${item.rot}) translate(${-cx.toFixed(2)} ${-cy.toFixed(2)}) scale(${scale.toFixed(4)})`}
-                  onPointerDown={(event) => onPointerDown(event, item.uid)}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    select(item.uid);
-                    setMenu({ x: event.clientX, y: event.clientY, uid: item.uid });
-                  }}
-                >
-                  <rect className="hit" data-hit x={box.x} y={box.y} width={box.w} height={box.h} />
-                  <g dangerouslySetInnerHTML={{ __html: shape.markup }} />
-                  {item.uid === selected && (
-                    <g data-ui>
-                      <rect
-                        x={box.x}
-                        y={box.y}
-                        width={box.w}
-                        height={box.h}
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeWidth={2}
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      {/* углы — ручки поворота: тянешь без всяких шифтов */}
-                      {[
-                        [box.x, box.y],
-                        [box.x + box.w, box.y],
-                        [box.x + box.w, box.y + box.h],
-                        [box.x, box.y + box.h],
-                      ].map(([hx, hy]) => (
-                        <circle
-                          key={`${hx}-${hy}`}
-                          className="rotHandle"
-                          cx={hx}
-                          cy={hy}
-                          r={7}
-                          onPointerDown={(event) => startRotate(event, item.uid)}
-                        >
-                          <title>потяните, чтобы повернуть</title>
-                        </circle>
-                      ))}
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-          {busy && (
-            <div className="busy">
-              <Spinner size={28} />
+        {empty ? (
+          // пустой кадр — пунктирная рамка: масштаб и пропорции видны, заливка не давит
+          <>
+            <div
+              ref={ghostRef}
+              className="ghost"
+              style={{ width: Math.floor(frame.w * fit), height: Math.floor(frame.h * fit) }}
+            >
+              <div className="sheetCaption t-mono">
+                <span>{current.name}</span>
+                <span>
+                  {frame.w}×{frame.h}
+                </span>
+              </div>
             </div>
-          )}
-        </div>
+            <StageEmpty sheetWidth={Math.floor(frame.w * fit)} />
+          </>
+        ) : (
+          <div className="mat" data-busy={busy}>
+            <div className="sheetCaption t-mono">
+              <span>{current.name}</span>
+              <span>
+                {frame.w}×{frame.h}
+              </span>
+            </div>
+            <svg
+              id="stage"
+              ref={svgRef}
+              className="sheet"
+              width={frame.w}
+              height={frame.h}
+              viewBox={`0 0 ${frame.w} ${frame.h}`}
+              style={{
+                background: palette.bg[0],
+                width: Math.floor(frame.w * fit),
+                height: Math.floor(frame.h * fit),
+              }}
+              onPointerMove={onPointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              onPointerDown={() => {
+                // на iPhone фокус в поле ввода держит зум — снимаем его при тапе по кадру
+                (document.activeElement as HTMLElement | null)?.blur?.();
+                select(null);
+              }}
+            >
+              {/* фон — обычная фигура в файле, иначе он терялся при экспорте */}
+              <rect id="фон" x={0} y={0} width={frame.w} height={frame.h} fill={palette.bg[0]} />
+              {bg !== "flat" &&
+                backgroundFor(bg, frame, size, palette).map((layer, index) => (
+                  <g
+                    key={index}
+                    data-bg
+                    id="подложка"
+                    opacity={layer.opacity}
+                    transform={`translate(${layer.x.toFixed(2)} ${layer.y.toFixed(2)}) scale(${layer.scale.toFixed(4)})`}
+                    dangerouslySetInnerHTML={{ __html: layer.markup }}
+                  />
+                ))}
+              {items.map((item, index) => {
+                // разметка ещё не приехала — предмет не рисуем, но кадр не ломаем
+                const file = objectById.get(item.id)?.sizes[size][item.kind].file;
+                if (!file || !hasSprite(file)) return null;
+                const shape = sprite(item.id, item.kind, size, scheme, palette, item.tone);
+                const box = contentBox(`${item.id}:${item.kind}:${size}:${scheme}`, shape.markup, shape.w, shape.h);
+                const scale = item.scale ?? fallbackScale;
+                const cx = (box.x + box.w / 2) * scale;
+                const cy = (box.y + box.h / 2) * scale;
+                const layerName = objectById.get(item.id)?.name ?? item.id;
+                return (
+                  <g
+                    key={item.uid}
+                    id={`${layerName}-${index + 1}`}
+                    data-item
+                    data-selected={item.uid === selected}
+                    className="item"
+                    transform={`translate(${(item.x * frame.w).toFixed(2)} ${(item.y * frame.h).toFixed(2)}) rotate(${item.rot}) translate(${-cx.toFixed(2)} ${-cy.toFixed(2)}) scale(${scale.toFixed(4)})`}
+                    onPointerDown={(event) => onPointerDown(event, item.uid)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      select(item.uid);
+                      setMenu({ x: event.clientX, y: event.clientY, uid: item.uid });
+                    }}
+                  >
+                    <rect className="hit" data-hit x={box.x} y={box.y} width={box.w} height={box.h} />
+                    <g dangerouslySetInnerHTML={{ __html: shape.markup }} />
+                    {item.uid === selected && (
+                      <g data-ui>
+                        <rect
+                          x={box.x}
+                          y={box.y}
+                          width={box.w}
+                          height={box.h}
+                          fill="none"
+                          stroke="var(--accent)"
+                          strokeWidth={2}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        {/* углы — ручки поворота: тянешь без всяких шифтов */}
+                        {[
+                          [box.x, box.y],
+                          [box.x + box.w, box.y],
+                          [box.x + box.w, box.y + box.h],
+                          [box.x, box.y + box.h],
+                        ].map(([hx, hy]) => (
+                          <circle
+                            key={`${hx}-${hy}`}
+                            className="rotHandle"
+                            cx={hx}
+                            cy={hy}
+                            r={7}
+                            onPointerDown={(event) => startRotate(event, item.uid)}
+                          >
+                            <title>потяните, чтобы повернуть</title>
+                          </circle>
+                        ))}
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+            {busy && (
+              <div className="busy">
+                <Spinner size={28} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {menu && (

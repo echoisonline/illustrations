@@ -25,6 +25,8 @@
   --r: 3px;
   --r-lg: 5px;
   --accent: #7864d7;
+  /* один темп для всех состояний: медленнее выглядит вяло, быстрее — дёргано */
+  --t: 170ms;
 }
 
 html,
@@ -92,16 +94,16 @@ textarea {
 /* ---------- типографика ---------- */
 
 .t-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
 
 .t-mono {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -217,10 +219,10 @@ textarea {
   height: 26px;
   padding: 0 9px;
   border-radius: 2px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   color: var(--color-muted);
-  transition: color 0.15s, background-color 0.15s;
+  transition: color var(--t), background-color var(--t);
 }
 
 .modeSwitch button:hover {
@@ -405,11 +407,11 @@ textarea {
   height: 26px;
   padding: 0 9px;
   border-radius: 2px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--color-muted);
-  transition: color 0.15s, background-color 0.15s;
+  transition: color var(--t), background-color var(--t);
 }
 
 .seg button:hover {
@@ -644,8 +646,11 @@ textarea {
 
 /* фон */
 
+/* три равные доли: подписи не вылезают за панель на узком экране */
 .choiceRow {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
   padding: 2px;
   gap: 2px;
   border: 1px solid var(--color-line);
@@ -654,12 +659,13 @@ textarea {
 }
 
 .choiceRow button {
-  height: 24px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 4px;
   border-radius: 2px;
-  font-size: 11px;
+  font-size: 11.5px;
+  white-space: nowrap;
   color: var(--color-muted);
-  transition: color 0.15s, background-color 0.15s;
+  transition: color var(--t), background-color var(--t);
 }
 
 .choiceRow button:hover {
@@ -725,7 +731,7 @@ textarea {
 .empty {
   padding: 8px var(--pad);
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* замена */
@@ -742,12 +748,12 @@ textarea {
 }
 
 .replaceItem {
-  font-size: 11px;
+  font-size: 12px;
   padding: 4px 8px;
   color: var(--color-muted);
   border: 1px solid var(--color-line);
   border-radius: var(--r);
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--t), border-color var(--t);
 }
 
 .replaceItem:hover {
@@ -807,9 +813,9 @@ textarea {
   border-radius: var(--r);
   background: var(--color-paper-3);
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
-  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  transition: color var(--t), border-color var(--t), background-color var(--t);
 }
 
 .btn:hover {
@@ -832,13 +838,19 @@ textarea {
   border-radius: var(--r);
   background: var(--color-ink);
   color: var(--color-paper-3);
-  font-size: 11.5px;
+  font-size: 12.5px;
   letter-spacing: 0.02em;
-  transition: background-color 0.15s;
+  transition: background-color var(--t);
 }
 
 .btnPrimary:hover {
   background: #2b2721;
+}
+
+/* недоступная основная кнопка не должна выглядеть нажимаемой */
+.btnPrimary:disabled {
+  opacity: 0.42;
+  pointer-events: none;
 }
 
 /* ---------- нижняя панель (узкие экраны) ---------- */
@@ -859,9 +871,9 @@ textarea {
   gap: 3px;
   height: 54px;
   color: var(--color-muted);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  transition: color 0.15s, background-color 0.15s;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  transition: color var(--t), background-color var(--t);
 }
 
 .bottomItem:hover,
@@ -1046,7 +1058,7 @@ textarea {
 
   .seg button {
     padding: 0 8px;
-    font-size: 10.5px;
+    font-size: 11.5px;
   }
 }
 
@@ -1197,7 +1209,7 @@ textarea {
   .modeSwitch button {
     height: 24px;
     padding: 0 8px;
-    font-size: 10.5px;
+    font-size: 11.5px;
   }
 
   .briefField {
@@ -1485,7 +1497,7 @@ textarea {
 .formatSeg button {
   justify-content: center;
   padding: 0 4px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .formatGlyph {
@@ -1704,5 +1716,174 @@ body {
     height: 32px;
     font-size: 12.5px;
     padding: 0 12px;
+  }
+}
+/* ---------- первый проход: действия шапки ---------- */
+
+/* сборка отделена от поля: у основной кнопки есть подпись, у перелистывания — счётчик */
+.briefActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.briefActions .btn,
+.briefActions .btnPrimary {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.briefCount {
+  color: var(--color-muted);
+  padding-left: 2px;
+}
+
+/* ---------- подсказки к кнопкам ---------- */
+
+.tip {
+  position: fixed;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--r);
+  background: var(--color-paper-3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-ink) 8%, transparent);
+  color: var(--color-ink);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: tipIn 0.14s ease-out;
+}
+
+.tip[data-side="bottom"] {
+  transform: translate(-50%, 0);
+}
+
+.tipKey {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  padding: 1px 4px;
+  border: 1px solid var(--color-line);
+  border-radius: 2px;
+  background: var(--color-paper);
+  color: var(--color-muted);
+}
+
+@keyframes tipIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- пустой холст ---------- */
+
+/* рамка будущего кадра: пропорции видны до первой сборки */
+.ghost {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px dashed color-mix(in srgb, var(--color-ink) 24%, transparent);
+}
+
+/* примеры лежат прямо на холсте: без панели, чтобы кадр оставался кадром */
+.first {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.firstTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--color-ink);
+}
+
+.firstRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.firstItem {
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  padding: 5px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  transition: border-color var(--t), background-color var(--t);
+}
+
+.firstItem:hover {
+  border-color: var(--color-line);
+  background: var(--color-paper-2);
+}
+
+/* размер заглушки приходит из разметки: он равен размеру миниатюры */
+.firstItem[data-loading="true"] {
+  border-color: var(--color-line-soft);
+  background: var(--color-paper-2);
+}
+
+.firstArt {
+  display: block;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+}
+
+.firstName {
+  font-size: 12.5px;
+  color: var(--color-muted);
+  transition: color var(--t);
+}
+
+.firstItem:hover .firstName {
+  color: var(--color-ink);
+}
+
+@media (max-width: 760px) {
+  .briefActions {
+    order: 4;
+    flex: 1 0 calc(100% - 24px);
+    margin: 2px 12px 0;
+    gap: 8px;
+  }
+
+  .briefActions .btn,
+  .briefActions .btnPrimary {
+    flex: 1;
+    justify-content: center;
+    height: 34px;
+  }
+
+  .first {
+    padding: 8px;
+  }
+
+  .firstTitle {
+    font-size: 16px;
+  }
+
+  .firstRow {
+    gap: 8px;
   }
 }

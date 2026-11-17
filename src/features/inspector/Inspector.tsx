@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Copy, RotateCcw, RotateCw, Square, Trash2, X } from
 import { alternatives, facetsOf } from "../../domain/compose";
 import { objectById } from "../../domain/library";
 import { useStore } from "../../state/store";
+import { TipButton } from "../../ui/TipButton";
 import { PaletteDialog } from "../palette/PaletteDialog";
 
 export function Inspector({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -81,6 +82,7 @@ export function Inspector({ open, onClose }: { open: boolean; onClose: () => voi
               <button
                 className="paletteRow"
                 data-on={scheme === key}
+                aria-pressed={scheme === key}
                 onClick={() => setScheme(key)}
                 aria-label={`схема ${entry.name}`}
                 title={entry.name}
@@ -187,53 +189,66 @@ export function Inspector({ open, onClose }: { open: boolean; onClose: () => voi
         )}
       </div>
 
-      <div className="actions">
-        <button
+      {!current && (
+        <p className="inspectorHint">Выберите объект на холсте, чтобы изменить его.</p>
+      )}
+      <div className="actions" hidden={!current}>
+        <TipButton
           className="iconBtn"
-          aria-label="повернуть влево"
-          title="повернуть влево"
+          label="повернуть влево"
+          keys="["
           disabled={!current}
           onClick={() => current && rotate(current.uid, current.rot - 15)}
         >
           <RotateCcw size={14} />
-        </button>
-        <button
+        </TipButton>
+        <TipButton
           className="iconBtn"
-          aria-label="повернуть вправо"
-          title="повернуть вправо"
+          label="повернуть вправо"
+          keys="]"
           disabled={!current}
           onClick={() => current && rotate(current.uid, current.rot + 15)}
         >
           <RotateCw size={14} />
-        </button>
-        <button
-          className="iconBtn"
-          aria-label="главный или фоновый"
-          title="главный или фоновый рисунок"
-          disabled={!current}
-          onClick={toggleKind}
-        >
+        </TipButton>
+        <TipButton className="iconBtn" label="главный или фоновый" disabled={!current} onClick={toggleKind}>
           <Square size={13} />
-        </button>
-        <button className="iconBtn" aria-label="дублировать" title="дублировать" disabled={!current} onClick={duplicate}>
-          <Copy size={13} />
-        </button>
-        <button className="iconBtn" aria-label="выше" title="выше слоем" disabled={!current} onClick={() => reorder(1)}>
-          <ArrowUp size={14} />
-        </button>
-        <button className="iconBtn" aria-label="ниже" title="ниже слоем" disabled={!current} onClick={() => reorder(-1)}>
-          <ArrowDown size={14} />
-        </button>
-        <button
+        </TipButton>
+        <TipButton
           className="iconBtn"
-          aria-label="удалить"
-          title="удалить"
+          label="дублировать"
+          keys="Ctrl D"
+          disabled={!current}
+          onClick={duplicate}
+        >
+          <Copy size={13} />
+        </TipButton>
+        <TipButton
+          className="iconBtn"
+          label="выше слоем"
+          disabled={!current}
+          onClick={() => reorder(1)}
+        >
+          <ArrowUp size={14} />
+        </TipButton>
+        <TipButton
+          className="iconBtn"
+          label="ниже слоем"
+          disabled={!current}
+          onClick={() => reorder(-1)}
+        >
+          <ArrowDown size={14} />
+        </TipButton>
+        <TipButton
+          className="iconBtn"
+          label="удалить"
+          keys="Delete"
           disabled={!current}
           onClick={remove}
           style={{ marginLeft: "auto" }}
         >
           <Trash2 size={13} />
-        </button>
+        </TipButton>
       </div>
     </aside>
   );
