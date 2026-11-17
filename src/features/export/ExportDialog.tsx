@@ -21,6 +21,7 @@ export function ExportDialog({ variant = "header" }: { variant?: "header" | "bot
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<Kind | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const current = frameFor(formatById(format), size);
   const tag = `${scheme}${size}`;
@@ -28,10 +29,13 @@ export function ExportDialog({ variant = "header" }: { variant?: "header" | "bot
 
   const run = async (variant: Kind) => {
     setBusy(variant);
+    setError(null);
     try {
       if (variant === "svg") exportSvg(current, tag);
       else await exportPng(current, tag);
       setOpen(false);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "не удалось экспортировать");
     } finally {
       setBusy(null);
     }
@@ -83,8 +87,9 @@ export function ExportDialog({ variant = "header" }: { variant?: "header" | "bot
             })}
           </div>
 
+          {error && <p className="dialogMeta" role="alert">{error}</p>}
           <p className="dialogMeta t-mono">
-            {empty ? "сцена пустая" : `${current.w}×${current.h} · ${items.length} слоя`}
+            {empty ? "сцена пустая" : `${current.w}×${current.h}, ${items.length} слоя`}
           </p>
         </Dialog.Content>
       </Dialog.Portal>
