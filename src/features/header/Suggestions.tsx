@@ -2,15 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { objects } from "../../domain/library";
 import { useStore } from "../../state/store";
 
-/** Готовые темы: формулировки, которые сразу собирают сцену. */
-const THEMES = [
-  "идея и вдохновение",
-  "музыка и подкасты",
-  "уют и красота дома",
-  "обучение и курсы",
-  "деньги и бюджет",
-  "порядок в процессах",
-];
+import { METAPHOR_PRESETS } from "../../domain/compose/presets";
 
 const MAX_OBJECTS = 3;
 
@@ -80,7 +72,7 @@ export function Suggestions({ open, onPick }: { open: boolean; onPick: () => voi
           <span className="t-mono">метафора или задача</span>
         </div>
         <div className="suggestList">
-          {THEMES.map((theme) => (
+          {METAPHOR_PRESETS.map(({ title: theme }) => (
             <button
               key={theme}
               type="button"

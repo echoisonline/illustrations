@@ -1,5 +1,6 @@
 import { objects } from "../library";
 import { referencePlan } from "./reference";
+import { metaphorPreset } from "./presets";
 import type { Relation, ScenePlan, SceneRole } from "./graph";
 
 /** Грань смысла: домен объекта. */
@@ -103,6 +104,8 @@ export function readBrief(brief: string): Map<string, number> {
     const hits = brief.match(new RegExp(re.source, "gi"));
     if (hits) weights.set(facet, (weights.get(facet) ?? 0) + hits.length);
   }
+  const preset = metaphorPreset(brief);
+  if (preset) weights.set(preset.facet, (weights.get(preset.facet) ?? 0) + 3);
   return weights;
 }
 
@@ -191,6 +194,11 @@ function planFrom(heroId: string, supportId: string | null, detailId: string | n
  * «рабочее место для идей» — это и идея, и работа, и порядок.
  */
 export function resolvePlans(brief: string): ScenePlan[] {
+  const preset = metaphorPreset(brief);
+  if (preset) {
+    const plan = planFromNames([...preset.ids]);
+    return plan ? [{ ...plan, facet: preset.facet, idea: preset.idea }] : [];
+  }
   const weights = readBrief(brief);
   const facets = [...weights.entries()].sort((a, b) => b[1] - a[1]).map(([facet]) => facet);
   const plans: ScenePlan[] = [];

@@ -8,12 +8,9 @@ import { formatById, frameFor, type Item } from "../../domain/scene";
 import { useStore } from "../../state/store";
 import { useSprites } from "../../state/sprites";
 
-/** Первый кадр: три готовые темы. Каждая миниатюра — настоящая сцена. */
-const EXAMPLES = [
-  { theme: "обучение и курсы", caption: "обучение" },
-  { theme: "деньги и бюджет", caption: "деньги" },
-  { theme: "музыка и подкасты", caption: "музыка" },
-];
+import { FEATURED_METAPHORS } from "../../domain/compose/presets";
+
+const EXAMPLES = FEATURED_METAPHORS.map((preset) => ({ theme: preset.title, caption: preset.title }));
 
 /** рамки размера миниатюры: мельче — не видно сцены, крупнее — карточка съедает кадр */
 const THUMB_MIN = 40;
@@ -116,7 +113,12 @@ export function StageEmpty({ sheetWidth }: { sheetWidth: number }) {
       <div className="firstRow">
         {previews
           ? previews.map((entry) => (
-              <button key={entry.theme} className="firstItem" onClick={() => pick(entry.theme)}>
+              <button
+                key={entry.theme}
+                className="firstItem"
+                style={{ width: Math.round(thumb * ratio) + 14 }}
+                onClick={() => pick(entry.theme)}
+              >
                 <Thumb
                   items={entry.items}
                   plates={entry.plates}
