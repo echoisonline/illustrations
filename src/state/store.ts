@@ -12,7 +12,7 @@ import {
 import { askPose, type Pose } from "../domain/compose/pose";
 import { ensureSprites, hasSprite } from "../domain/library";
 import { palettes as basePalettes } from "../domain/library";
-import type { BackgroundVariant } from "../domain/background";
+import { suggestedBackground, type BackgroundVariant } from "../domain/background";
 import type { FormatId, Kind, Palette, Size } from "../domain/library";
 import { clamp01, formatById, uid, type Item } from "../domain/scene";
 
@@ -66,23 +66,6 @@ function saveCustom(palettes: Record<string, Palette>) {
 
 // по умолчанию холст пустой: сцена появляется только после запроса
 const START: { items: Item[]; reasons: Record<string, Reason> } = { items: [], reasons: {} };
-
-/**
- * Пересборка при смене формата или размера: композиция считается под новый кадр.
- * Ручные сцены (объекты без общего масштаба) не трогаем.
- */
-function recompose(
-  state: { brief: string; inputMode: "theme" | "objects"; items: Item[]; pose: Pose | null },
-  format: FormatId,
-  size: Size,
-) {
-  if (!state.items.length) return null;
-  if (!state.items.every((item) => typeof item.scale === "number")) return null;
-  const target = formatById(format);
-  return state.inputMode === "objects"
-    ? composeFromNames(state.brief, target, size)
-    : compose(state.brief, target, size, state.pose);
-}
 
 type Store = {
   format: FormatId;
@@ -145,11 +128,12 @@ function poolFor(
     inputMode === "objects"
       ? composeNameCandidates(text, format, size)
       : composeCandidates(text, format, size, pose);
-  const source = inputMode === "objects" ? candidates.filter((entry) => entry.ok) : candidates;
-  const ordered = [...source].sort((a, b) => Number(b.ok) - Number(a.ok) || b.score - a.score);
-  // листаем только по корректным вариантам; если их меньше двух — по всем
-  const clean = ordered.filter((entry) => entry.ok);
-  const list = clean.length >= 2 ? clean : ordered;
+  const ordered = [...candidates].sort((a, b) => Number(b.ok) - Number(a.ok) || b.score - a.score);
+  const castKey = (items: Item[]) => items.map((item) => item.id).sort().join("+");
+  const firstCast = ordered[0] ? castKey(ordered[0].items) : "";
+  const sameCast = ordered.filter((entry) => castKey(entry.items) === firstCast);
+  const clean = sameCast.filter((entry) => entry.ok);
+  const list = clean.length ? clean : sameCast;
   const seen = new Set<string>();
   const pool: Array<{ pattern: string; mirror: boolean; items: Item[] }> = [];
   for (const entry of list) {
@@ -161,6 +145,36 @@ function poolFor(
     pool.push({ pattern: entry.pattern, mirror: entry.mirror, items: entry.items });
   }
   return pool;
+}
+
+function changeFrame(format: FormatId, size: Size) {
+  const state = useStore.getState();
+  if (state.dirty || !state.lastBrief || (!state.items.length && !state.thinking)) {
+    useStore.setState({ format, size });
+    return;
+  }
+  const stamp = ++runStamp;
+  const text = state.lastBrief;
+  const mode = state.lastMode ?? state.inputMode;
+  const files = filesForBrief(text, mode, size);
+  if (state.bg !== "flat") files.push(`fon/${state.bg}-${format}.svg`);
+  const apply = () => {
+    if (stamp !== runStamp) return;
+    if (useStore.getState().dirty || !files.every(hasSprite)) {
+      useStore.setState({ thinking: false });
+      return;
+    }
+    const target = formatById(format);
+    const next = mode === "objects" ? composeFromNames(text, target, size) : compose(text, target, size);
+    const variants = poolFor(text, target, size, mode);
+    useStore.setState({ format, size, items: variants[0]?.items ?? next.items, reasons: next.reasons,
+      variants, variantIndex: 0, selected: null, pose: null, thinking: false });
+  };
+  if (files.every(hasSprite)) apply();
+  else {
+    useStore.setState({ format, size, thinking: true });
+    void ensureSprites(files).then(apply);
+  }
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -182,27 +196,8 @@ export const useStore = create<Store>((set, get) => ({
   variantIndex: 0,
   selected: null,
 
-  setFormat: (format) =>
-    set((s) => {
-      // сцену правили руками — оставляем как есть, координаты заданы в долях кадра
-      if (s.dirty) return { format };
-      const next = recompose(s, format, s.size);
-      // поза может не подойти новому кадру: сцену в этом случае не трогаем
-      return next && next.items.length ? { format, items: next.items, reasons: next.reasons } : { format };
-    }),
-  setSize: (size) =>
-    set((s) => {
-      if (s.dirty) return { size };
-      const next = recompose(s, s.format, size);
-      if (next && next.items.length) return { size, items: next.items, reasons: next.reasons };
-      return {
-        size,
-        items: s.items.map((item) =>
-          // спрайты S нарисованы вдвое мельче, холст тоже вдвое меньше — масштаб не трогаем
-          typeof item.scale === "number" ? item : { ...item, scale: 1 },
-        ),
-      };
-    }),
+  setFormat: (format) => changeFrame(format, get().size),
+  setSize: (size) => changeFrame(get().format, size),
   setScheme: (scheme) => set({ scheme }),
   setBg: (bg) => set({ bg }),
   setInputMode: (inputMode) => set({ inputMode }),
@@ -214,10 +209,12 @@ export const useStore = create<Store>((set, get) => ({
     const state = get();
     const text = (brief ?? state.brief).trim();
     if (!text) return;
+    const stamp = ++runStamp;
 
     // Геометрия считается по реальным границам рисунка, а разметка грузится
     // по одному файлу: пока нужного нет — держим индикатор и ждём загрузку.
     const files = filesForBrief(text, state.inputMode, state.size);
+    files.push(`fon/plate-${state.format}.svg`, `fon/geometry-${state.format}.svg`);
     if (!files.every((file) => hasSprite(file))) {
       set({
         brief: text,
@@ -231,12 +228,13 @@ export const useStore = create<Store>((set, get) => ({
         selected: null,
       });
       void ensureSprites(files).then(() => {
-        if (get().brief === text) get().run(text);
+        if (stamp !== runStamp) return;
+        if (get().brief === text && !get().dirty && files.every(hasSprite)) get().run(text);
+        else set({ thinking: false });
       });
       return;
     }
 
-    const stamp = ++runStamp;
     const format = formatById(state.format);
     const next =
       state.inputMode === "objects"
@@ -247,7 +245,7 @@ export const useStore = create<Store>((set, get) => ({
     // пул вариантов: по нему листается «другой вариант»
     const pool = poolFor(text, format, state.size, state.inputMode);
     const items = pool[0]?.items ?? next.items;
-    const waiting = state.inputMode === "theme";
+    const waiting = state.inputMode === "theme" && items.length > 0 && !pool[0]?.pattern.startsWith("референс:");
 
     /**
      * Сценарий темы: сначала ждём позу от модели, показывая спиннер, и только
@@ -290,6 +288,7 @@ export const useStore = create<Store>((set, get) => ({
       items: waiting ? state.items : items,
       reasons: waiting ? state.reasons : next.reasons,
       scheme,
+      bg: items.length ? suggestedBackground(items) : state.bg,
       dirty: false,
       pose: null,
       thinking: waiting,
@@ -387,10 +386,14 @@ export const useStore = create<Store>((set, get) => ({
   replace: (newId) =>
     set((s) => ({
       dirty: true,
-      items: s.items.map((item) => (item.uid === s.selected ? { ...item, id: newId } : item)),
+      items: s.items.map((item) => (item.uid === s.selected ? { ...item, id: newId, tone: undefined } : item)),
     })),
 
-  clear: () => set({ items: [], selected: null, reasons: {}, dirty: true }),
+  clear: () => {
+    ++runStamp;
+    set({ items: [], selected: null, reasons: {}, dirty: true, thinking: false,
+      variants: [], variantIndex: 0, lastBrief: null, lastMode: null });
+  },
 }));
 
 // доступ из консоли, стенда и e2e-проверок
