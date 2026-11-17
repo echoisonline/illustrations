@@ -38,6 +38,9 @@ export function LibraryRail({ open, onClose }: { open: boolean; onClose: () => v
         </button>
       </div>
 
+      <div className="libraryIntro">
+        <span className="t-label">Библиотека</span>
+      </div>
       <div className="objects">
         {objects.map((object) => {
           const file = object.sizes[size].main.file;

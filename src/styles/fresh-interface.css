@@ -1,0 +1,445 @@
+
+/* ---------- свежий слой интерфейса ---------- */
+:root {
+  --color-paper: #f4f4f1;
+  --color-paper-2: #ececea;
+  --color-paper-3: #ffffff;
+  --color-ink: #171717;
+  --color-muted: #777777;
+  --color-line: #d7d7d3;
+  --color-line-soft: #e7e7e3;
+  --accent: #cf4c94;
+  --top-h: 72px;
+  --r: 10px;
+  --r-lg: 16px;
+}
+
+body {
+  background: var(--color-paper);
+}
+
+.top {
+  grid-template-columns: 208px minmax(0, 1fr) 208px;
+  gap: 0;
+  background: var(--color-paper-3);
+  border-bottom-color: var(--color-line-soft);
+}
+
+.brand {
+  gap: 8px;
+  padding-inline: 20px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.brief {
+  gap: 8px;
+  padding-inline: 14px;
+}
+
+.modeSwitch,
+.briefField,
+.seg,
+.formatRow {
+  border-color: var(--color-line-soft);
+  background: var(--color-paper);
+}
+
+.modeSwitch button[data-on="true"],
+.seg button[data-on="true"] {
+  background: var(--color-paper-3);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+
+.briefField {
+  height: 36px;
+  border-radius: 12px;
+  background: var(--color-paper-3);
+}
+
+.briefField:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 75%, var(--color-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.briefField input {
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.briefActions .btn,
+.briefActions .btnPrimary {
+  height: 36px;
+  border-radius: 11px;
+}
+
+.btnPrimary {
+  background: #ffc2e2;
+  border-color: #ffc2e2;
+  color: var(--color-ink);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #ffafd8;
+}
+
+.briefActions .btn:not(.btnPrimary) {
+  border-color: transparent;
+}
+
+.exportRow {
+  padding-inline: 16px 20px;
+}
+
+.stageBar {
+  min-height: 52px;
+  padding-inline: 20px;
+  background: var(--color-paper-3);
+  border-bottom-color: var(--color-line-soft);
+}
+
+.stageArea {
+  padding: 32px;
+  background: var(--color-paper);
+}
+
+.ghost {
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-paper-3) 62%, transparent);
+}
+
+.sheet {
+  border: 1px solid var(--color-line-soft);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-ink) 5%, transparent);
+}
+
+.sheetCaption {
+  top: -23px;
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.first {
+  gap: 20px;
+}
+
+.firstIntro {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 420px;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.firstActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.firstStart,
+.firstSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color var(--t), border-color var(--t);
+}
+
+.firstStart {
+  background: var(--color-ink);
+  color: var(--color-paper-3);
+}
+
+.firstStart:hover {
+  background: color-mix(in srgb, var(--color-ink) 82%, var(--accent));
+}
+
+.firstSecondary {
+  border: 1px solid var(--color-line);
+  background: var(--color-paper-3);
+}
+
+.firstSecondary:hover {
+  border-color: var(--accent);
+}
+
+.firstTitle {
+  font-family: var(--font-sans);
+  font-size: clamp(17px, 2vw, 24px);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.firstItem {
+  padding: 7px;
+  border-radius: 14px;
+}
+
+.firstItem:hover {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--color-line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--color-paper-3));
+  transform: translateY(-2px);
+}
+
+.firstArt {
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--color-ink) 10%, transparent);
+}
+
+.firstName {
+  color: var(--color-ink);
+  font-weight: 550;
+}
+
+.top {
+  --control-h: 36px;
+  --control-r: 10px;
+}
+
+.top .modeSwitch,
+.top .formatRow {
+  box-sizing: border-box;
+  height: var(--control-h);
+  padding: 3px;
+  border-radius: var(--control-r);
+  align-items: stretch;
+}
+
+.top .modeSwitch button,
+.top .formatRow button {
+  height: auto;
+  min-height: 0;
+  border-radius: calc(var(--control-r) - 4px);
+}
+
+.top .briefField,
+.top .briefActions .btn,
+.top .briefActions .btnPrimary,
+.top .exportRow > .btn {
+  height: var(--control-h);
+  border-radius: var(--control-r);
+}
+
+.briefField input {
+  border-radius: 6px;
+}
+
+.briefField input:focus-visible {
+  outline: none;
+}
+
+.modeSwitch button,
+.seg button,
+.choiceRow button {
+  border-radius: 6px;
+}
+
+.libraryIntro {
+  padding: 8px 6px 16px;
+}
+
+.objects {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.object {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--color-paper-3);
+  transition: border-color var(--t), background-color var(--t);
+}
+
+.object:hover {
+  border-color: var(--color-line);
+  background: var(--color-paper-3);
+}
+
+.objectArt {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 64px;
+}
+
+.objectName {
+  color: var(--color-ink);
+  text-align: center;
+  font-size: 12px;
+}
+
+.objectGrip {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+}
+
+.paletteRow {
+  height: 34px;
+  padding: 5px;
+  gap: 4px;
+  border-radius: 10px;
+  align-items: center;
+}
+
+.chip {
+  flex: 1 1 0;
+  min-width: 0;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.paletteRow[data-on="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--color-paper-3));
+}
+
+.paletteAdd {
+  height: 32px;
+  margin-top: 8px;
+  border-style: solid;
+  border-color: var(--color-line-soft);
+  background: var(--color-paper-3);
+}
+
+.sizeRow {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--color-line-soft);
+  border-radius: 10px;
+  background: var(--color-paper-2);
+}
+
+.sizeRow button {
+  min-width: 36px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sizeRow button[data-on="true"] {
+  background: var(--color-paper-3);
+}
+
+.choiceRow {
+  padding: 3px;
+  border-color: var(--color-line-soft);
+}
+
+.choiceRow button[data-on="true"] {
+  box-shadow: none;
+}
+
+.layers {
+  padding: 4px 10px 10px;
+  gap: 3px;
+}
+
+.layer {
+  min-height: 34px;
+  height: auto;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border-left: 0;
+}
+
+.layer[data-on="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--color-paper-3));
+}
+
+.inspectorHint {
+  margin: auto 0 0;
+  padding: 18px var(--pad);
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.actions[hidden] {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .libraryIntro {
+    padding: 16px var(--pad) 12px;
+  }
+
+  .rail-left .objects {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .chip {
+    flex: 0 1 24px;
+    width: 24px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .top {
+    grid-template-columns: 184px minmax(0, 1fr) 184px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .top {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .brand {
+    padding-inline: 12px;
+  }
+
+  .stageArea {
+    padding: 16px 12px;
+  }
+
+  .ghost {
+    border-radius: 12px;
+  }
+
+  .first {
+    gap: 14px;
+  }
+
+  .firstTitle {
+    max-width: 290px;
+    font-size: 21px;
+  }
+
+  .firstActions {
+    gap: 6px;
+  }
+
+  .firstStart,
+  .firstSecondary {
+    min-height: 36px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+}
