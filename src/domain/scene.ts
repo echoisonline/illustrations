@@ -4,6 +4,7 @@ export type Item = {
   uid: string;
   id: string;
   kind: Kind;
+  tone?: "warm";
   /** центр объекта в долях кадра */
   x: number;
   y: number;

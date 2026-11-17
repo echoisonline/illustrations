@@ -1,8 +1,14 @@
+import type { Item } from "./scene";
 import type { Format, Palette, Size } from "./library";
 import { formatPlate, hasSprite, plate, type PlateKindId } from "./library";
 
 /** Фон композиции: подложка, геометрия или чистый цвет схемы. */
 export type BackgroundVariant = PlateKindId | "flat";
+
+export function suggestedBackground(items: Item[]): BackgroundVariant {
+  return items.some((item) => item.id === "telefon") && !items.some((item) => item.id === "kniga") ||
+    items.some((item) => item.id === "naushniki") ? "plate" : "geometry";
+}
 
 export type BackgroundLayer = {
   kind: "plate";

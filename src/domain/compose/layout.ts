@@ -8,6 +8,11 @@ export type LayoutCandidate = {
   pattern: string;
   mirror: boolean;
   items: Item[];
+  framing?: {
+    heroId: string;
+    minVisible: number;
+    overlaps: string[];
+  };
 };
 
 type RoleBoxes = Partial<Record<SceneRole, Box>>;
@@ -289,6 +294,16 @@ export function generateLayouts(
 ): LayoutCandidate[] {
   const roleOf = new Map<SceneRole, string>();
   for (const node of plan.nodes) roleOf.set(node.role, node.assetId);
+  if (roleOf.size < plan.nodes.length) {
+    const columns = Math.ceil(Math.sqrt(plan.nodes.length * frame.w / frame.h));
+    const rows = Math.ceil(plan.nodes.length / columns);
+    return [{ pattern: "сетка", mirror: false, items: plan.nodes.map((node, index) => ({
+      uid: uid(node.assetId), id: node.assetId, kind: node.kind,
+      x: ((index % columns) + 0.5) / columns,
+      y: (Math.floor(index / columns) + 0.5) / rows,
+      scale: 1, rot: 0,
+    })) }];
+  }
 
   const boxesByRole: RoleBoxes = {};
   for (const node of plan.nodes) boxesByRole[node.role] = boxes[node.assetId];

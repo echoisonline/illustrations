@@ -2,6 +2,7 @@ import { objectById, palettes, sprite, type Format, type Kind, type Size } from 
 import { contentBox } from "../library/measure";
 import { frameFor, type Item } from "../scene";
 import type { Box, ScenePlan, SceneRole } from "./graph";
+import { referenceLayouts } from "./reference";
 import { generateLayouts } from "./layout";
 import { judge } from "./score";
 import { alternatives, facetsOf, moodScheme, parseNames, planFromNames, readBrief, resolvePlans, type Reason } from "./semantic";
@@ -74,86 +75,30 @@ export function composeCandidates(
   format: Format,
   size: Size,
   pose?: Pose | null,
-  keepAll = false,
 ): Candidate[] {
   const plans = resolvePlans(brief);
-  return candidatesFromPlans(plans, format, size, pose, true, keepAll);
+  return candidatesFromPlans(plans, format, size, pose);
 }
 
 /** Выбранная поза: паттерн и зеркало. */
 export type Pose = { pattern: string; mirror: boolean };
-
-/**
- * Проверка складываемости пары. Если два крупных предмета не помещаются рядом,
- * в сценарии с метафорой партнёра можно заменить на предмет помельче — иначе
- * остаются только позы с обрезом краем.
- */
-function fitCast(plan: ScenePlan, frame: { w: number; h: number }, size: Size): ScenePlan {
-  const hero = plan.nodes.find((node) => node.role === "hero");
-  const support = plan.nodes.find((node) => node.role === "support");
-  if (!hero || !support) return plan;
-
-  const heroWidth = artRef(hero.assetId, "main", size).w;
-  const supportWidth = artRef(support.assetId, "main", size).w;
-  if (heroWidth + supportWidth <= frame.w * 1.05) return plan;
-
-  const replacement = alternatives(hero.assetId).find((id) => {
-    if (plan.nodes.some((node) => node.assetId === id)) return false;
-    return heroWidth + artRef(id, "main", size).w <= frame.w * 1.0;
-  });
-  if (!replacement) return plan;
-
-  return {
-    ...plan,
-    nodes: plan.nodes.map((node) =>
-      node.assetId === support.assetId ? { ...node, assetId: replacement } : node,
-    ),
-    relations: plan.relations.map((entry) =>
-      entry.source === support.assetId ? { ...entry, source: replacement } : entry,
-    ),
-  };
-}
 
 function candidatesFromPlans(
   plans: ScenePlan[],
   format: Format,
   size: Size,
   pose?: Pose | null,
-  substitutable = true,
-  /** в сценарии с объектами ничего не выбрасываем: предметы назвал человек */
-  keepAll = false,
 ): Candidate[] {
   const frame = frameFor(format, size);
   const out: Candidate[] = [];
 
-  for (const source of plans) {
-    const cast = substitutable ? fitCast(source, frame, size) : source;
+  for (const plan of plans) {
     const boxes: Record<string, Box> = {};
     const kinds: Record<string, Kind> = {};
-    for (const node of cast.nodes) {
+    for (const node of plan.nodes) {
       boxes[node.assetId] = artRef(node.assetId, node.kind, size);
       kinds[node.assetId] = node.kind;
     }
-
-    // В кадре не больше трёх объектов: лишний всегда деталь. И деталь не
-    // ставится рядом с мелкой поддержкой — иначе на одном месте башня.
-    const heroNode = cast.nodes.find((node) => node.role === "hero");
-    const supportNode = cast.nodes.find((node) => node.role === "support");
-    const crowded = cast.nodes.length > 3;
-    const smallSupport =
-      Boolean(heroNode && supportNode) &&
-      Boolean(boxes[supportNode!.assetId]) &&
-      boxes[supportNode!.assetId].w < (boxes[heroNode!.assetId]?.w ?? 0) * 0.6;
-    const dropDetail = keepAll ? false : crowded || smallSupport;
-    // если герой занял кадр целиком, декор в тему не ставим: он ляжет на него
-    const dropDecor =
-      !keepAll && Boolean(heroNode) && (boxes[heroNode!.assetId]?.w ?? 0) > frame.w * 1.6;
-    const plan: ScenePlan = {
-      ...cast,
-      nodes: cast.nodes.filter(
-        (node) => !(dropDetail && node.role === "detail") && !(dropDecor && node.role === "decor"),
-      ),
-    };
 
     const roles: Record<string, SceneRole> = {};
     for (const node of plan.nodes) roles[node.assetId] = node.role;
@@ -173,8 +118,9 @@ function candidatesFromPlans(
         .map((entry) => [entry.source, entry.target].sort().join("+")),
     );
 
-    const forced = pose && PATTERN_RELATION[pose.pattern] !== undefined ? pose : undefined;
-    for (const candidate of generateLayouts(plan, boxes, kinds, frame, format.id, forced ?? undefined)) {
+    const references = referenceLayouts(plan, format.id);
+    const layouts = references.length ? references : generateLayouts(plan, boxes, kinds, frame, format.id);
+    for (const candidate of layouts) {
       const verdict = judge(candidate, boxes, frame, largeIds, hero.assetId, allowed, roles);
       // «Relations»: если паттерн совпал с задуманным отношением — бонус
       const intended = plan.relations.find((entry) => entry.target === hero.assetId)?.type;
@@ -192,7 +138,7 @@ function candidatesFromPlans(
         mirror: candidate.mirror,
         facet: plan.facet,
         ok: verdict.ok,
-        score: verdict.score + match + preferred,
+        score: references.length ? 2 - references.indexOf(candidate) * 0.01 : verdict.score + match + preferred,
         violations: verdict.violations,
         items: candidate.items,
         metrics: verdict.metrics,
@@ -242,7 +188,7 @@ export function composeNameCandidates(
   const { ids } = parseNames(names);
   const plan = planFromNames(ids);
   if (!plan) return [];
-  return candidatesFromPlans([plan], format, size, null, false, true);
+  return candidatesFromPlans([plan], format, size);
 }
 
 /** Сценарий 2: названия → лучшая сцена из заданного набора. */
@@ -252,7 +198,7 @@ export function composeFromNames(names: string, format: Format, size: Size): Com
   if (!plan) return EMPTY;
 
   // названные предметы — закон: состав не подменяем и не выкидываем
-  const all = candidatesFromPlans([plan], format, size, null, false, true).sort(
+  const all = candidatesFromPlans([plan], format, size).sort(
     (a, b) => b.score - a.score,
   );
   const best = all.find((candidate) => candidate.ok) ?? all[0];

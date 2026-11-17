@@ -394,7 +394,7 @@ export function Stage() {
               // разметка ещё не приехала — предмет не рисуем, но кадр не ломаем
               const file = objectById.get(item.id)?.sizes[size][item.kind].file;
               if (!file || !hasSprite(file)) return null;
-              const shape = sprite(item.id, item.kind, size, scheme, palette);
+              const shape = sprite(item.id, item.kind, size, scheme, palette, item.tone);
               const box = contentBox(`${item.id}:${item.kind}:${size}:${scheme}`, shape.markup, shape.w, shape.h);
               const scale = item.scale ?? fallbackScale;
               const cx = (box.x + box.w / 2) * scale;

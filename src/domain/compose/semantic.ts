@@ -1,4 +1,5 @@
 import { objects } from "../library";
+import { referencePlan } from "./reference";
 import type { Relation, ScenePlan, SceneRole } from "./graph";
 
 /** Грань смысла: домен объекта. */
@@ -48,24 +49,23 @@ const CONCEPTS: Array<{ facet: string; re: RegExp }> = [
   { facet: "контроль", re: /контрол|сбережен|учет|учёт|аналитик|отчет|отчёт/i },
 ];
 
-/** Осмысленные пары: объекты, которые читаются вместе. */
-const PAIRS: Array<{ facet: string; ids: [string, string] }> = [
-  { facet: "знание", ids: ["kniga", "telefon"] },
-  { facet: "знание", ids: ["kniga", "lampa"] },
-  { facet: "деньги", ids: ["koshelek", "moneta"] },
-  { facet: "деньги", ids: ["moneta", "telefon"] },
-  { facet: "идея", ids: ["lampa", "papka"] },
-  { facet: "ритм", ids: ["naushniki", "telefon"] },
-  { facet: "порядок", ids: ["papka", "ruchka"] },
-  { facet: "продукт", ids: ["telefon", "pazl"] },
-  { facet: "забота", ids: ["vaza", "kniga"] },
-  { facet: "решение", ids: ["pazl", "papka"] },
-  { facet: "авторство", ids: ["ruchka", "kniga"] },
-  { facet: "работа", ids: ["lampa", "papka"] },
-  { facet: "цифра", ids: ["telefon", "pazl"] },
-  { facet: "эстетика", ids: ["vaza", "lampa"] },
-  { facet: "история", ids: ["kniga", "ruchka"] },
-];
+const CASTS: Record<string, string[]> = {
+  знание: ["kniga", "telefon"],
+  история: ["kniga", "telefon"],
+  деньги: ["koshelek", "moneta", "lampa"],
+  ценность: ["papka", "koshelek", "moneta"],
+  контроль: ["koshelek", "moneta", "lampa"],
+  идея: ["papka", "ruchka", "lampa"],
+  работа: ["papka", "ruchka", "lampa"],
+  ритм: ["naushniki", "vaza"],
+  порядок: ["papka", "koshelek", "moneta"],
+  решение: ["kniga", "pazl", "ruchka"],
+  продукт: ["telefon", "pazl"],
+  цифра: ["telefon", "pazl"],
+  авторство: ["kniga", "pazl", "ruchka"],
+  забота: ["naushniki", "vaza"],
+  эстетика: ["naushniki", "vaza"],
+};
 
 /**
  * Отношение в паре — как предметы взаимодействуют в референсах.
@@ -92,30 +92,8 @@ export const PAIR_RELATION: Record<string, Relation> = {
  */
 const SURFACES = ["kniga", "papka", "koshelek", "telefon"];
 
-/** Мелкая деталь: кладётся поверх крупного — пазл, монета, ручка. */
-const ACCENTS = ["pazl", "moneta", "ruchka"];
-
 /** Лампа и ваза — декор: уходят вверх и работают фоном, видно примерно половину. */
 export const DECOR = ["lampa", "vaza"];
-
-/** Декор уместен не в каждой теме: лампа в сцене про деньги — лишний предмет. */
-const DECOR_FACETS = ["идея", "работа", "забота", "эстетика"];
-
-/**
- * Темы про дом и красоту: здесь ваза — не фон, а сам предмет.
- * Иначе «уют» превращался в книгу с пазлом, а ваза уходила в декор.
- */
-const HOME_FACETS = new Set(["забота", "эстетика"]);
-
-/**
- * Кто читается главным при обрезе краем: плоские «самодостаточные» предметы.
- * Ручка, лампа и монета в роли героя режутся так, что перестают узнаваться.
- */
-const HERO_ORDER = ["kniga", "papka", "telefon", "koshelek", "naushniki", "pazl", "vaza", "lampa", "ruchka", "moneta"];
-const heroRank = (id: string) => {
-  const index = HERO_ORDER.indexOf(id);
-  return index < 0 ? HERO_ORDER.length : index;
-};
 
 export type Reason = { facet: string; source: "бриф" | "роль" };
 
@@ -183,14 +161,6 @@ export function parseNames(input: string): { ids: string[]; unknown: string[] } 
   return { ids, unknown };
 }
 
-function pickDecor(facet: string | null, used: string[]): string | null {
-  if (!facet || !DECOR_FACETS.includes(facet)) return null;
-  const free = DECOR.filter((id) => !used.includes(id));
-  if (!free.length) return null;
-  const wanted = facet === "забота" || facet === "эстетика" ? "vaza" : "lampa";
-  return free.includes(wanted) ? wanted : free[0];
-}
-
 /** Собирает узлы и связи плана из пары и ролей. */
 function planFrom(heroId: string, supportId: string | null, detailId: string | null, decorId: string | null, facet: string, idea: string): ScenePlan {
   const nodes: ScenePlan["nodes"] = [{ assetId: heroId, role: "hero", kind: "main" }];
@@ -226,44 +196,10 @@ export function resolvePlans(brief: string): ScenePlan[] {
   const plans: ScenePlan[] = [];
 
   for (const facet of facets.slice(0, 3)) {
-    const pair = PAIRS.find((entry) => entry.facet === facet);
-    if (!pair) continue;
-
-    let [heroId, supportId] = pair.ids;
-
-    // в темах про дом и красоту герой — ваза: это и есть предмет истории
-    const home = HOME_FACETS.has(facet) && pair.ids.includes("vaza");
-    if (home) {
-      heroId = "vaza";
-      supportId = pair.ids.find((id) => id !== "vaza") ?? "";
-    } else if (heroRank(heroId) > heroRank(supportId)) {
-      [heroId, supportId] = [supportId, heroId];
-    }
-
-    // лампа и ваза не бывают героем: это декор, он уходит в фон
-    let decorId: string | null = null;
-    if (DECOR.includes(supportId) && !home) {
-      decorId = supportId;
-      supportId = "";
-    }
-    if (!decorId && !home) decorId = pickDecor(facet, [heroId, supportId].filter(Boolean));
-
-    // если героем остался «нечитаемый» предмет (ручка, монета, пазл), берём
-    // крупный из библиотеки: обрез краем такой герой не переживает
-    if (!home && heroRank(heroId) > 4) {
-      const readable = HERO_ORDER.slice(0, 4).find(
-        (id) => id !== heroId && id !== supportId && id !== decorId,
-      );
-      if (readable) heroId = readable;
-    }
-
-    // деталь ставим только к обычному герою: пазл на вазе читается как мусор
-    const detailId = home
-      ? null
-      : ACCENTS.find((id) => id !== heroId && id !== supportId && id !== decorId) ?? null;
-    plans.push(
-      planFrom(heroId, supportId || null, detailId, decorId, facet, `${heroId} и ${supportId || "окружение"}`),
-    );
+    const cast = CASTS[facet];
+    if (!cast) continue;
+    const plan = planFromNames(cast);
+    if (plan) plans.push({ ...plan, facet, idea: cast.join(" и ") });
   }
 
   return plans;
@@ -274,13 +210,17 @@ export function resolvePlans(brief: string): ScenePlan[] {
  * ваза всё равно уходят в фон, остальные разбираются по ролям по порядку.
  */
 export function planFromNames(ids: string[]): ScenePlan | null {
-  if (!ids.length) return null;
-  const decorId = ids.find((id) => DECOR.includes(id)) ?? null;
-  const rest = ids.filter((id) => id !== decorId);
-  const heroId = rest[0] ?? "kniga";
-  const supportId = rest[1] ?? null;
-  const detailId = rest[2] ?? null;
-  return planFrom(heroId, supportId, detailId, decorId, "вручную", "сцена из названий");
+  const unique = [...new Set(ids)].filter((id) => objects.some((object) => object.id === id));
+  if (!unique.length) return null;
+  const decorId = unique.length > 1 ? unique.find((id) => DECOR.includes(id)) ?? null : null;
+  const rest = unique.filter((id) => id !== decorId);
+  const [heroId, supportId, detailId] = rest;
+  const plan = planFrom(heroId, supportId ?? null, detailId ?? null, decorId, "вручную", "сцена из названий");
+  for (const id of rest.slice(3)) {
+    plan.nodes.push({ assetId: id, role: "detail", kind: "main" });
+    plan.relations.push({ source: id, target: heroId, type: "near" });
+  }
+  return referencePlan(plan);
 }
 
 export type { SceneRole };

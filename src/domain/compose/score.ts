@@ -70,7 +70,7 @@ export function judge(
     if (Math.abs(item.x) > 1.6 || Math.abs(item.y) > 1.6) violations.push("объект улетел за кадр");
   }
 
-  const hero = rects.find((rect) => rect.id === heroId);
+  const hero = rects.find((rect) => rect.id === (candidate.framing?.heroId ?? heroId));
   if (!hero) return { ok: false, violations: ["пустая сцена"], score: 0, metrics: { heroVisible: 0, maxOverlap: 0, occupancy: 0, balance: 0 } };
 
   const heroVisible = inside(hero, frame).area / Math.max(1, hero.w * hero.h);
@@ -82,7 +82,8 @@ export function judge(
       const a = rects[i];
       const b = rects[j];
       if (!largeIds.has(a.id) || !largeIds.has(b.id)) continue;
-      if (allowed.has([a.id, b.id].sort().join("+"))) continue;
+      const pair = [a.id, b.id].sort().join("+");
+      if (allowed.has(pair) || candidate.framing?.overlaps.includes(pair)) continue;
       // мелочь рядом с крупным — это деталь, а не конфликт двух больших вещей
       if (Math.min(a.w, b.w) < Math.max(a.w, b.w) * 0.55) continue;
       const share = overlap(a, b) / Math.max(1, Math.min(a.w * a.h, b.w * b.h));
@@ -91,7 +92,7 @@ export function judge(
   }
 
   // в широком кадре крупный предмет неизбежно режется сверху и снизу
-  const minVisible = frame.w > frame.h * 1.4 ? 0.45 : 0.6;
+  const minVisible = candidate.framing?.minVisible ?? (frame.w > frame.h * 1.4 ? 0.45 : 0.6);
   if (heroVisible < minVisible) violations.push("герой почти не виден");
 
   // Каждый предмет должен быть виден: либо он не ушёл за кадр, либо его

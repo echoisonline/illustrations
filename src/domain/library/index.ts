@@ -34,11 +34,7 @@ export const palettes = manifest.palettes;
 export const formats = manifest.formats;
 export const objectById = new Map(objects.map((o) => [o.id, o]));
 
-/**
- * Разметка SVG живёт вне бандла: `public/sprites.json` собирает
- * `tools/build-sprites.mjs`. Приложение грузит его один раз до первого рендера,
- * поэтому дальше вся работа синхронная, а JavaScript остаётся лёгким.
- */
+/** Разметка SVG хранится вне бандла и загружается по одному файлу из public/sprites. */
 const raw = new Map<string, string>();
 const failed = new Set<string>();
 const asked = new Map<string, Promise<void>>();
@@ -120,12 +116,9 @@ function mix(from: string, to: string, t: number): string {
 export function recolor(markup: string, target: Palette, kind: Kind): string {
   const pairs: Array<[string, string]> = [];
 
-  // монохромный вариант (kind === "bg") нарисован цветом фона — на фоне он бы
-  // растворился, поэтому уводим его в отдельный тон: объект читается как среда
-  // фон должен читаться как предмет, а не как призрак: заливка заметно
-  // отличается от поля, контур — тот же тёмный, что в макете
-  const field = mix(target.bg[0], target.bg[1], 0.75);
-  const plane = target.bg[2];
+  // Монохромные предметы сохраняют заливку поля и акцентные контуры библиотеки.
+  const field = target.bg[0];
+  const plane = target.bg[1];
 
   // исходники нарисованы в разных схемах (объекты — в A, подложка-плоскость — в B),
   // поэтому источником считаем все базовые палитры сразу
@@ -154,15 +147,19 @@ export function recolor(markup: string, target: Palette, kind: Kind): string {
 
 const spriteCache = new Map<string, { markup: string; w: number; h: number }>();
 
-export function sprite(id: string, kind: Kind, size: Size, paletteKey: string, target: Palette) {
-  const key = `${id}:${kind}:${size}:${paletteKey}`;
+export function sprite(id: string, kind: Kind, size: Size, paletteKey: string, target: Palette, tone?: "warm") {
+  const key = `${id}:${kind}:${size}:${paletteKey}:${JSON.stringify(target)}:${tone ?? ""}`;
   const cached = spriteCache.get(key);
   if (cached) return cached;
 
   const object = objectById.get(id);
   if (!object) throw new Error(`нет объекта: ${id}`);
   const ref = object.sizes[size][kind];
-  const value = { markup: recolor(stripRoot(spriteText(ref.file)), target, kind), w: ref.w, h: ref.h };
+  const source = stripRoot(spriteText(ref.file));
+  const markup = tone === "warm" && kind === "main"
+    ? source.replace(/#d7cdf5|#f9ecb0/gi, (color) => color.toLowerCase() === "#d7cdf5" ? palettes.a.obj[0] : palettes.a.obj[1])
+    : source;
+  const value = { markup: recolor(markup, target, kind), w: ref.w, h: ref.h };
   spriteCache.set(key, value);
   return value;
 }
